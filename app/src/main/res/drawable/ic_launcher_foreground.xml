@@ -12,7 +12,7 @@
         android:strokeLineCap="round" />
     <!-- Progress segment -->
     <path
-        android:pathData="M39.86,72.85 A22,22 0 0,1 60.8,35.08"
+        android:pathData="M39.86,72.85 A22,22 0 0,1 66.17,37.68"
         android:strokeWidth="6"
         android:strokeColor="@color/icon_accent"
         android:strokeLineCap="round" />

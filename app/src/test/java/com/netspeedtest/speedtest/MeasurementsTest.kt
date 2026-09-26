@@ -74,10 +74,12 @@ class MeasurementsTest {
         val cf = SpeedTestServers.Cloudflare
         val json = ConnectionInfo.parse("""{"clientIp":"2001:db8::1","asOrganization":"Jio","colo":"BOM","city":"Mumbai"}""", cf)
         assertEquals(ConnectionInfo("BOM", "2001:db8::1", "Jio", "Mumbai"), json)
-        val kv = ConnectionInfo.parse("colo=DEL\nclientIp=10.0.0.1\n", cf)
+        val kv = ConnectionInfo.parse("colo=DEL\nip=10.0.0.1\n", cf)
         assertEquals("DEL", kv.serverLocation)
         assertEquals("10.0.0.1", kv.clientIp)
         assertNull(kv.isp)
+        val numericAsn = ConnectionInfo.parse("""{"asn":55836,"colo":"BOM"}""", cf)
+        assertEquals("AS55836", numericAsn.isp)
     }
 
     @Test

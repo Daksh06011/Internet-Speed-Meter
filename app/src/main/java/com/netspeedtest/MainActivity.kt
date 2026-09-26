@@ -68,6 +68,7 @@ class MainActivity : Activity() {
         root.setOnApplyWindowInsetsListener { _, insets -> applyInsets(insets) }
         setContentView(root)
         setupWindow(palette) // after setContentView: the insets controller needs the decor view
+        if (savedInstanceState == null) playLaunchAnimation(root)
 
         graph.navigator.listener = { route, forward ->
             sheets.dismiss()
@@ -93,6 +94,33 @@ class MainActivity : Activity() {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 }
+        }
+    }
+
+    /**
+     * Android 12+ shows the animated gauge icon on the launch screen. On a cold start we
+     * let it finish (it's under a second) and then fade/zoom the splash away smoothly.
+     * Skipped entirely when the user has turned animations off.
+     */
+    private fun playLaunchAnimation(content: View) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !android.animation.ValueAnimator.areAnimatorsEnabled()) return
+        val start = android.os.SystemClock.uptimeMillis()
+        content.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (android.os.SystemClock.uptimeMillis() - start < LAUNCH_ANIMATION_MS) return false
+                content.viewTreeObserver.removeOnPreDrawListener(this)
+                return true
+            }
+        })
+        splashScreen.setOnExitAnimationListener { splash ->
+            splash.animate()
+                .alpha(0f)
+                .scaleX(1.06f)
+                .scaleY(1.06f)
+                .setDuration(220)
+                .setInterpolator(com.netspeedtest.ui.components.Motion.Standard)
+                .withEndAction { splash.remove() }
+                .start()
         }
     }
 
@@ -197,5 +225,10 @@ class MainActivity : Activity() {
             @Suppress("DEPRECATION")
             super.onBackPressed()
         }
+    }
+
+    private companion object {
+        /** Matches windowSplashScreenAnimationDuration in values-v31/themes.xml. */
+        const val LAUNCH_ANIMATION_MS = 800L
     }
 }

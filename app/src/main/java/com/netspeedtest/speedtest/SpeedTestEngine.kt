@@ -121,24 +121,42 @@ class SpeedTestEngine(
         )
     }
 
-    /** Reads the optional metadata endpoint (server location, IP, ISP). Never fatal by itself. */
+    /**
+     * Collects connection details from every metadata source the server offers and merges
+     * them. Details are optional: a missing endpoint is skipped. Only a network failure
+     * (server unreachable) is reported, so the test fails fast instead of timing out later.
+     */
     private suspend fun fetchConnectionInfo(server: SpeedTestServer): ConnectionInfo? {
-        val url = server.metadataUrl ?: return null
-        return try {
-            http.open(url).runCancellable { c ->
-                c.requireSuccess()
+        var info = ConnectionInfo(null, null, null, null)
+        for (url in server.metadataUrls) {
+            if (info.serverLocation != null && info.clientIp != null && info.isp != null && info.city != null) break
+            info = info.mergedWith(readMetadata(url) { c ->
                 val body = c.inputStream.bufferedReader().use { it.readText().take(MAX_METADATA_CHARS) }
                 ConnectionInfo.parse(body, server)
+            })
+            if (url == server.metadataUrls.first()) {
+                server.metadataHeaderPrefix?.let { prefix ->
+                    info = info.mergedWith(readMetadata(server.pingUrl) { c ->
+                        c.inputStream.use { input -> while (input.read() != -1) Unit }
+                        ConnectionInfo.from(server) { key -> c.getHeaderField(prefix + key) }
+                    })
+                }
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: SpeedTestException) {
-            // A server without the metadata endpoint can still run the test.
-            if (e.error == TestError.ServerUnavailable || e.error == TestError.ServerBusy) null else throw e
-        } catch (e: java.io.IOException) {
-            // Metadata is optional, but an unreachable server is worth failing fast on.
-            throw SpeedTestException(e.toTestError(), e)
         }
+        return info.takeUnless { it.isEmpty }
+    }
+
+    private suspend fun readMetadata(url: String, read: (java.net.HttpURLConnection) -> ConnectionInfo): ConnectionInfo? = try {
+        http.open(url).apply { setRequestProperty("Accept", "application/json, text/plain") }.runCancellable { c ->
+            c.requireSuccess()
+            read(c)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: SpeedTestException) {
+        null // endpoint missing or busy: other sources may still answer
+    } catch (e: java.io.IOException) {
+        throw SpeedTestException(e.toTestError(), e)
     }
 
     /** Runs [block] while sampling latency every [LOADED_PROBE_INTERVAL_MS]. */

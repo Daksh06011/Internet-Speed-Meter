@@ -19,6 +19,8 @@ class LocalSpeedServer(
     private val stallDownloads: Boolean = false,
     /** Reject this many /ping and this many /down requests with 429 first (rate limiting, as seen behind CGNAT). */
     busyRequests: Int = 0,
+    /** Simulate a server without the JSON /meta endpoint (details must come from headers + trace). */
+    private val metaMissing: Boolean = false,
 ) : AutoCloseable {
     private val busyLeft = mapOf("/ping" to AtomicInteger(busyRequests), "/down" to AtomicInteger(busyRequests))
     val busyRejections = AtomicInteger()
@@ -37,11 +39,13 @@ class LocalSpeedServer(
                 pingUrl = "$base/ping",
                 downloadUrlTemplate = "$base/down?bytes=${SpeedTestServer.BYTES_TOKEN}",
                 uploadUrl = "$base/up",
-                metadataUrl = "$base/meta",
-                locationKey = "colo",
-                ipKey = "clientIp",
-                ispKey = "asOrganization",
-                cityKey = "city",
+                metadataUrls = listOf("$base/meta", "$base/cdn-cgi/trace"),
+                metadataHeaderPrefix = "cf-meta-",
+                locationKeys = listOf("colo"),
+                ipKeys = listOf("clientIp", "ip"),
+                ispKeys = listOf("asOrganization"),
+                cityKeys = listOf("city"),
+                asnKeys = listOf("asn"),
             )
         }
 
@@ -65,10 +69,17 @@ class LocalSpeedServer(
             when (ex.requestURI.path) {
                 "/ping" -> {
                     ex.responseHeaders.add("Server-Timing", "cfRequestDuration;dur=0.2")
+                    ex.responseHeaders.add("cf-meta-city", "Headertown")
+                    ex.responseHeaders.add("cf-meta-asn", "64501")
                     ex.sendResponseHeaders(200, -1)
                 }
-                "/meta" -> {
+                "/meta" -> if (metaMissing) ex.sendResponseHeaders(404, -1) else {
                     val body = """{"clientIp":"203.0.113.7","asn":64500,"asOrganization":"Test ISP \"Fibre\"","colo":"TST","city":"Testville","country":"XX"}""".toByteArray()
+                    ex.sendResponseHeaders(200, body.size.toLong())
+                    ex.responseBody.write(body)
+                }
+                "/cdn-cgi/trace" -> {
+                    val body = "fl=1\nh=speed.example\nip=198.51.100.9\ncolo=TRC\nloc=XX\n".toByteArray()
                     ex.sendResponseHeaders(200, body.size.toLong())
                     ex.responseBody.write(body)
                 }

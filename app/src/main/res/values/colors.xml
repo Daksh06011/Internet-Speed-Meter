@@ -2,6 +2,6 @@
 <resources>
     <color name="window_background">#FF161719</color>
     <color name="icon_background">#FF161719</color>
-    <color name="icon_accent">#FFD4F264</color>
+    <color name="icon_accent">#FF4DD8F7</color>
     <color name="icon_track">#FF2A2C31</color>
 </resources>

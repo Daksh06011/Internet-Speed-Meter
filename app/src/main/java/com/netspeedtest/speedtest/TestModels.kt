@@ -39,20 +39,36 @@ data class EngineUpdate(
 
 /** Who the server sees: public IP, internet provider and approximate city. */
 data class ConnectionInfo(val serverLocation: String?, val clientIp: String?, val isp: String?, val city: String?) {
+    val isEmpty: Boolean get() = serverLocation == null && clientIp == null && isp == null && city == null
+
+    /** Fills gaps in this info from [other]; values already present win. */
+    fun mergedWith(other: ConnectionInfo?): ConnectionInfo = if (other == null) this else ConnectionInfo(
+        serverLocation ?: other.serverLocation, clientIp ?: other.clientIp, isp ?: other.isp, city ?: other.city,
+    )
+
     companion object {
         /**
-         * Reads flat JSON (`"key":"value"`) or `key=value` lines. Only string values are
-         * needed, so a tiny parser keeps the engine free of JSON dependencies.
+         * Reads flat JSON (`"key":"value"` or `"key":123`) or `key=value` lines. Only flat
+         * values are needed, so a tiny parser keeps the engine free of JSON dependencies.
          */
-        fun parse(body: String, server: SpeedTestServer): ConnectionInfo {
-            fun value(key: String?): String? {
-                if (key == null) return null
-                val json = Regex("\"" + Regex.escape(key) + "\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(body)
-                val raw = json?.groupValues?.get(1)
-                    ?: body.lineSequence().map { it.split('=', limit = 2) }.firstOrNull { it.size == 2 && it[0].trim() == key }?.get(1)
-                return raw?.replace("\\/", "/")?.replace("\\\"", "\"")?.trim()?.takeIf { it.isNotEmpty() }?.take(64)
+        fun parse(body: String, server: SpeedTestServer): ConnectionInfo = from(server) { key ->
+            val json = Regex("\"" + Regex.escape(key) + "\"\\s*:\\s*(?:\"((?:[^\"\\\\]|\\\\.)*)\"|(-?[0-9.]+))").find(body)
+            json?.let { it.groupValues[1].ifEmpty { it.groupValues[2] } }
+                ?: body.lineSequence().map { it.split('=', limit = 2) }.firstOrNull { it.size == 2 && it[0].trim() == key }?.get(1)
+        }
+
+        /** Builds info from any key lookup (JSON body, key=value body or response headers). */
+        fun from(server: SpeedTestServer, lookup: (String) -> String?): ConnectionInfo {
+            fun first(keys: List<String>): String? = keys.firstNotNullOfOrNull { key ->
+                lookup(key)?.replace("\\/", "/")?.replace("\\\"", "\"")?.trim()?.takeIf { it.isNotEmpty() }?.take(64)
             }
-            return ConnectionInfo(value(server.locationKey), value(server.ipKey), value(server.ispKey), value(server.cityKey))
+            val asn = first(server.asnKeys)?.takeIf { it.all(Char::isDigit) }
+            return ConnectionInfo(
+                serverLocation = first(server.locationKeys),
+                clientIp = first(server.ipKeys),
+                isp = first(server.ispKeys) ?: asn?.let { "AS$it" },
+                city = first(server.cityKeys),
+            )
         }
     }
 }

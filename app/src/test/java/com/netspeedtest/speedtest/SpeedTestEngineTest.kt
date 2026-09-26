@@ -44,6 +44,18 @@ class SpeedTestEngineTest {
     }
 
     @Test
+    fun connectionDetailsFallBackWhenMetaEndpointIsMissing() = runBlocking {
+        LocalSpeedServer(downBytesPerSec = 2_000_000, upBytesPerSec = 2_000_000, metaMissing = true).use { server ->
+            val config = EngineConfig(pingSamples = 3, download = plan(1, 1_500), upload = plan(1, 1_500))
+            val info = withTimeout(30_000) { SpeedTestEngine().run(server.config, config) {} }.connectionInfo
+            assertEquals("TRC", info?.serverLocation)      // from /cdn-cgi/trace
+            assertEquals("198.51.100.9", info?.clientIp)   // from /cdn-cgi/trace
+            assertEquals("Headertown", info?.city)         // from cf-meta-* headers
+            assertEquals("AS64501", info?.isp)             // ASN when no provider name exists
+        }
+    }
+
+    @Test
     fun rateLimitedServerIsRetriedNotFailed() = runBlocking {
         // The first 3 ping and first 3 download requests get HTTP 429 — the test must back off and still finish.
         LocalSpeedServer(downBytesPerSec = 2_000_000, upBytesPerSec = 2_000_000, busyRequests = 3).use { server ->
@@ -111,7 +123,7 @@ class SpeedTestEngineTest {
     @Test
     fun unreachableServerFailsFast() = runBlocking {
         val port = java.net.ServerSocket(0).use { it.localPort } // closed port: connection refused
-        val config = SpeedTestServer("x", "x", "http://127.0.0.1:$port/p", "http://127.0.0.1:$port/d?b={bytes}", "http://127.0.0.1:$port/u", "http://127.0.0.1:$port/t", "colo")
+        val config = SpeedTestServer("x", "x", "http://127.0.0.1:$port/p", "http://127.0.0.1:$port/d?b={bytes}", "http://127.0.0.1:$port/u", metadataUrls = listOf("http://127.0.0.1:$port/t"), locationKeys = listOf("colo"))
         val error = runCatching {
             withTimeout(5_000) { SpeedTestEngine().run(config, EngineConfig(download = plan(1, 1000), upload = plan(1, 1000))) {} }
         }.exceptionOrNull()

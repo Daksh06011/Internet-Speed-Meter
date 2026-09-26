@@ -12,7 +12,7 @@ All screenshots in `docs/screenshots/` are produced by the automated UI tests, w
 
 ## Features
 - **Real speed test.** Download, upload, ping, jitter and latency under load (bufferbloat), measured against Cloudflare's nearest edge. A live gauge, phase progress and a live speed graph update during the test. You can cancel at any time, and a second tap cannot start a duplicate test.
-- **Connection details like Speedtest.** Your internet provider (ISP), public IP address and the serving data centre come from Cloudflare's `/meta` endpoint. A **Multi / Single** connections switch (on Home and in Settings) chooses between parallel streams and one stream.
+- **Connection details like Speedtest.** Your internet provider (ISP), public IP address and the serving data centre come from Cloudflare's metadata (`/meta`, `cf-meta-*` headers and `/cdn-cgi/trace`, merged so one missing source never blanks them; the network number, e.g. AS55836, is shown when no provider name is available). A **Multi / Single** connections switch (on Home and in Settings) chooses between parallel streams and one stream.
 - **Share results** as text from the result screen.
 - **Result summary.** Results are rated for browsing, streaming, gaming and video calls against documented thresholds (`QualityThresholds`). The summary also shows data used, the server and the network.
 - **Device health.** Tiles for battery, charging/power draw, temperature, network, memory and live traffic. Each tile opens a detail screen.
@@ -20,6 +20,7 @@ All screenshots in `docs/screenshots/` are produced by the automated UI tests, w
 - **Temperature.** Live battery temperature with battery health and charging status.
 - **History.** Stored locally only. You can delete single results or clear everything (with confirmation).
 - **Settings.** Theme (System / Light / Dark, default Dark), unit (Mbps / MB/s), keep the screen on during tests, and haptics.
+- **Launch animation.** On Android 12+ the gauge icon sweeps up, settles and fades into the app (under a second, cold start only, skipped when animations are off).
 - **Motion and accessibility.** Spring press states, number interpolation, staggered entrances and a one-shot completion pulse. Haptics follow system settings. Everything respects "Remove animations". Views have TalkBack descriptions, touch targets are at least 48 dp, layouts survive font scaling, and states are never shown by colour alone.
 
 ## Architecture
@@ -96,7 +97,7 @@ gradle -p offline-build assembleApk assembleBundle test smokeTest  # APK + AAB i
 ```
 
 ## Testing performed
-40 automated tests plus a smoke test of the shrunk release code, all passing:
+41 automated tests plus a smoke test of the shrunk release code, all passing:
 - **Engine end-to-end over real loopback sockets** against a bandwidth-throttled HTTP server. At a 48 Mbps throttle it measured 47.8 Mbps. Cancellation closes every stream in about 0.3 s, with no bytes flowing afterwards. Server errors, refused connections and stalled transfers each map to the right error.
 - **Controller.** A full test runs through the UI state machine and is saved to history. A double tap is ignored. Cancel works, and late updates cannot revive a cancelled test.
 - **UI (Robolectric, real rendering).** The home screen shows real battery readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Values a phone doesn't report are hidden, never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.
