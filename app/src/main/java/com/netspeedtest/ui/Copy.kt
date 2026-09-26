@@ -12,6 +12,7 @@ object Copy {
         TestError.NoInternet -> Message("No internet connection", "Check Wi‑Fi or mobile data and try again.")
         TestError.AirplaneMode -> Message("Airplane mode is on", "Turn off airplane mode or join a Wi‑Fi network, then try again.")
         TestError.Timeout -> Message("Connection timed out", "The server stopped responding. Your connection may be unstable — try again.")
+        TestError.ServerBusy -> Message("Server is busy", "The test server is handling a lot of traffic from your network. Wait a minute and try again.")
         TestError.ServerUnavailable -> Message("Test server unavailable", "The speed test server couldn't be reached right now. Try again in a moment.")
         TestError.SecureConnectionFailed -> Message("Secure connection failed", "A secure connection couldn't be made. Wi‑Fi sign-in pages often cause this.")
         TestError.ConnectionLost -> Message("Connection lost", "The network dropped during the test. Try again once you're back online.")

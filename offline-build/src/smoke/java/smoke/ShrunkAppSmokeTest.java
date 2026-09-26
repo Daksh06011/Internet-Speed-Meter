@@ -18,7 +18,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 /** Runs the ProGuard-processed code (exactly what gets dexed into the APK). Java only, so no Kotlin stdlib clash. */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34)
+@Config(sdk = 36)
 public class ShrunkAppSmokeTest {
     static void idle() { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1500)); }
 

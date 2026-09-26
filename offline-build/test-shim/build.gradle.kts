@@ -26,7 +26,7 @@ sourceSets.main {
     kotlin.exclude(onDeviceOnly)
 }
 dependencies {
-    compileOnly(files(rootDir.resolve("../sdk/android-35.jar")))
+    compileOnly(files(rootDir.resolve("../sdk/android-36.jar")))
 }
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.addAll(listOf("-nowarn", "-proc:none")) }
 tasks.jar { archiveFileName.set("androidx-test-shim.jar") }

@@ -12,3 +12,7 @@ offline-build/sdk/
 offline-build/debug.keystore
 offline-build/test-shim/build/
 offline-build/test-shim/.gradle/
+keystore.properties
+*.keystore
+*.jks
+offline-build/release/

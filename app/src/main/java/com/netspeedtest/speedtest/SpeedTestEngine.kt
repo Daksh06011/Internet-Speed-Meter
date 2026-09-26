@@ -134,7 +134,7 @@ class SpeedTestEngine(
             throw e
         } catch (e: SpeedTestException) {
             // A server without the metadata endpoint can still run the test.
-            if (e.error == TestError.ServerUnavailable) null else throw e
+            if (e.error == TestError.ServerUnavailable || e.error == TestError.ServerBusy) null else throw e
         } catch (e: java.io.IOException) {
             // Metadata is optional, but an unreachable server is worth failing fast on.
             throw SpeedTestException(e.toTestError(), e)

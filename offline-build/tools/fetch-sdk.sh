@@ -6,9 +6,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p sdk
 RAW=https://raw.githubusercontent.com/Reginer/aosp-android-jar/main
-[ -f sdk/android-35.jar ] || curl -fsSL -o sdk/android-35.jar "$RAW/android-35/android.jar"
+[ -f sdk/android-36.jar ] || curl -fsSL -o sdk/android-36.jar "$RAW/android-36/android.jar"
 # aapt2 from Ubuntu (Android 14) cannot parse the API 35 resource table, so resources link against API 34.
 [ -f sdk/android-34.jar ] || curl -fsSL -o sdk/android-34.jar "$RAW/android-34/android.jar"
+
+# bundletool turns the compiled module into the .aab that Google Play requires.
+[ -f sdk/bundletool.jar ] || curl -fsSL -o sdk/bundletool.jar https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
 
 if [ ! -f sdk/androidx-test-shim.jar ]; then
   src=build/android-test-src

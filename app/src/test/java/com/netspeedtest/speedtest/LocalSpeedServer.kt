@@ -17,7 +17,11 @@ class LocalSpeedServer(
     private val upBytesPerSec: Long = Long.MAX_VALUE,
     private val failWith: Int? = null,
     private val stallDownloads: Boolean = false,
+    /** Reject this many /ping and this many /down requests with 429 first (rate limiting, as seen behind CGNAT). */
+    busyRequests: Int = 0,
 ) : AutoCloseable {
+    private val busyLeft = mapOf("/ping" to AtomicInteger(busyRequests), "/down" to AtomicInteger(busyRequests))
+    val busyRejections = AtomicInteger()
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 64)
     private val pool = Executors.newCachedThreadPool()
     val activeTransfers = AtomicInteger()
@@ -51,6 +55,11 @@ class LocalSpeedServer(
         try {
             failWith?.let {
                 ex.sendResponseHeaders(it, -1)
+                return
+            }
+            if ((busyLeft[ex.requestURI.path]?.getAndDecrement() ?: 0) > 0) {
+                busyRejections.incrementAndGet()
+                ex.sendResponseHeaders(429, -1)
                 return
             }
             when (ex.requestURI.path) {

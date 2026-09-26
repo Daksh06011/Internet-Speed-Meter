@@ -2,7 +2,7 @@
 
 A small, fast, privacy-first Android speed test and device-health utility with a soft neumorphic interface. It uses no gradients, glass or fake numbers.
 
-**APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (260 KB, minSdk 28 / Android 9, targetSdk 35, signed with a debug key for sideloading)
+**Play Store bundle:** [`dist/NetSpeedTest-1.0.0.aab`](dist/NetSpeedTest-1.0.0.aab) (signed with your upload key). **Sideload APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (debug key). minSdk 28 / Android 9, targetSdk 36 / Android 16. Publishing steps: [`PLAY_STORE.md`](PLAY_STORE.md). Privacy policy: [`PRIVACY.md`](PRIVACY.md).
 
 | Home (dark) | Result | Light theme |
 |---|---|---|
@@ -92,11 +92,11 @@ Limits: Wi‑Fi/Ethernet allow 12 s / 600 MB down and 10 s / 250 MB up. Metered 
 ```bash
 sudo apt-get install aapt apksigner zipalign dalvik-exchange
 offline-build/tools/fetch-sdk.sh          # framework jars + androidx.test shim for Robolectric
-gradle -p offline-build assembleApk test  # APK is copied to dist/, screenshots to docs/screenshots/
+gradle -p offline-build assembleApk assembleBundle test smokeTest  # APK + AAB in dist/, screenshots in docs/
 ```
 
 ## Testing performed
-36 automated tests, all passing:
+40 automated tests plus a smoke test of the shrunk release code, all passing:
 - **Engine end-to-end over real loopback sockets** against a bandwidth-throttled HTTP server. At a 48 Mbps throttle it measured 47.8 Mbps. Cancellation closes every stream in about 0.3 s, with no bytes flowing afterwards. Server errors, refused connections and stalled transfers each map to the right error.
 - **Controller.** A full test runs through the UI state machine and is saved to history. A double tap is ignored. Cancel works, and late updates cannot revive a cancelled test.
 - **UI (Robolectric, real rendering).** The home screen shows real battery readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Values a phone doesn't report are hidden, never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.

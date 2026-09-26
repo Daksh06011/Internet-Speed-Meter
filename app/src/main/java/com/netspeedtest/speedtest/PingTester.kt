@@ -38,7 +38,17 @@ class PingTester(
         count: Int = 12,
         onProgress: (samples: List<Double>, fraction: Float) -> Unit,
     ): Result {
-        sample(server) // warm-up, establishes the connection
+        // Warm-up: establishes the connection (DNS + TCP + TLS); retried if the server is busy.
+        var attempt = 0
+        while (true) {
+            try {
+                sample(server)
+                break
+            } catch (e: SpeedTestException) {
+                if (e.error != TestError.ServerBusy || ++attempt >= WARMUP_ATTEMPTS) throw e
+                delay(BUSY_BACKOFF_MS * attempt)
+            }
+        }
         val samples = ArrayList<Double>(count)
         var failures = 0
         while (samples.size < count) {
@@ -47,7 +57,9 @@ class PingTester(
                 samples += sample(server)
                 onProgress(samples, samples.size / count.toFloat())
             } catch (e: SpeedTestException) {
-                throw e
+                // A rate-limited probe is retried after a pause; anything else is fatal.
+                if (e.error != TestError.ServerBusy || ++failures > count / 2) throw e
+                delay(BUSY_BACKOFF_MS)
             } catch (e: java.io.IOException) {
                 // A single lost probe is tolerated; a flaky link that loses most is an error.
                 if (++failures > count / 2) throw e
@@ -64,6 +76,8 @@ class PingTester(
 
     companion object {
         private const val PROBE_GAP_MS = 40L
+        private const val BUSY_BACKOFF_MS = 1_000L
+        private const val WARMUP_ATTEMPTS = 5
         private val DRAIN = ByteArray(1024)
 
         /** Extracts the first `dur=` value (milliseconds) from a Server-Timing header. */

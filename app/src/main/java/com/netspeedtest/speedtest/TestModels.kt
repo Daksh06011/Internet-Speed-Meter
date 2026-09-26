@@ -9,6 +9,8 @@ enum class TestError {
     AirplaneMode,
     Timeout,
     ServerUnavailable,
+    /** The server is rate-limiting (HTTP 429/503) — common behind carrier-grade NAT, where many users share one IP. */
+    ServerBusy,
     SecureConnectionFailed,
     ConnectionLost,
     NetworkChanged,

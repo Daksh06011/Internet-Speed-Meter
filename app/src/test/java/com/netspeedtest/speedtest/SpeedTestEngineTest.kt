@@ -44,6 +44,28 @@ class SpeedTestEngineTest {
     }
 
     @Test
+    fun rateLimitedServerIsRetriedNotFailed() = runBlocking {
+        // The first 3 ping and first 3 download requests get HTTP 429 — the test must back off and still finish.
+        LocalSpeedServer(downBytesPerSec = 2_000_000, upBytesPerSec = 2_000_000, busyRequests = 3).use { server ->
+            val config = EngineConfig(pingSamples = 4, download = plan(2, 3_000), upload = plan(2, 3_000))
+            val outcome = withTimeout(60_000) { SpeedTestEngine().run(server.config, config) {} }
+            assertEquals(6, server.busyRejections.get())
+            assertTrue(outcome.pingMs > 0)
+            assertTrue(outcome.downloadMbps > 5 && outcome.uploadMbps > 5)
+        }
+    }
+
+    @Test
+    fun persistentRateLimitIsReportedAsServerBusy() = runBlocking {
+        LocalSpeedServer(busyRequests = 10_000).use { server ->
+            val error = runCatching {
+                withTimeout(30_000) { SpeedTestEngine().run(server.config, EngineConfig(download = plan(1, 1000), upload = plan(1, 1000))) {} }
+            }.exceptionOrNull()
+            assertEquals(TestError.ServerBusy, error?.toTestError())
+        }
+    }
+
+    @Test
     fun singleConnectionModeUsesOneStream() = runBlocking {
         LocalSpeedServer(downBytesPerSec = 1_500_000, upBytesPerSec = 1_000_000).use { server ->
             val config = EngineConfig(pingSamples = 3, download = plan(4, 3_000), upload = plan(3, 3_000)).singleStream()
@@ -78,7 +100,7 @@ class SpeedTestEngineTest {
 
     @Test
     fun serverErrorIsReportedAsServerUnavailable() = runBlocking {
-        LocalSpeedServer(failWith = 503).use { server ->
+        LocalSpeedServer(failWith = 500).use { server ->
             val error = runCatching {
                 SpeedTestEngine().run(server.config, EngineConfig(download = plan(1, 1000), upload = plan(1, 1000))) {}
             }.exceptionOrNull()

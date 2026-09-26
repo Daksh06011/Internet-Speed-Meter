@@ -73,11 +73,12 @@ abstract class TransferTester(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Throwable) {
-                            if (e is SpeedTestException || ++consecutiveErrors >= MAX_STREAM_RETRIES) {
+                            val busy = e is SpeedTestException && e.error == TestError.ServerBusy
+                            if ((e is SpeedTestException && !busy) || ++consecutiveErrors >= MAX_STREAM_RETRIES) {
                                 failure.compareAndSet(null, e)
                                 break
                             }
-                            delay(RETRY_BACKOFF_MS * consecutiveErrors)
+                            delay((if (busy) BUSY_BACKOFF_MS else RETRY_BACKOFF_MS) * consecutiveErrors)
                         }
                     }
                 } finally {
@@ -131,6 +132,7 @@ abstract class TransferTester(
         const val BUFFER_SIZE = 64 * 1024
         private const val MAX_STREAM_RETRIES = 3
         private const val RETRY_BACKOFF_MS = 250L
+        private const val BUSY_BACKOFF_MS = 700L
         private const val STABLE_SPAN_NANOS = 2_000_000_000L
         private const val STABLE_TOLERANCE = 0.04
 

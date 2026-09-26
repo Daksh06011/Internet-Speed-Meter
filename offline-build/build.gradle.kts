@@ -14,6 +14,8 @@
  *         gradle -p offline-build test             (JVM + Robolectric tests)
  */
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.security.SecureRandom
+import java.util.Properties
 
 plugins {
     kotlin("jvm") version "2.2.21"
@@ -28,11 +30,11 @@ val appVersionCode = 1
 val appVersionName = "1.0.0"
 val appPackage = "com.netspeedtest"
 val minSdk = 28
-val targetSdk = 35
+val targetSdk = 36
 
 val appDir = rootDir.resolve("../app").normalize()
 val sdkDir = rootDir.resolve("sdk")
-val compileJar = sdkDir.resolve("android-35.jar")   // classes (compile classpath)
+val compileJar = sdkDir.resolve("android-36.jar")   // classes (compile classpath)
 val linkJar = sdkDir.resolve("android-34.jar")      // framework resources for aapt2
 val genDir = layout.buildDirectory.dir("generated/r")
 val resOut = layout.buildDirectory.dir("res")
@@ -225,6 +227,100 @@ val assembleApk by tasks.registering {
         project.exec { commandLine(tool("apksigner"), "verify", "--min-sdk-version", "$minSdk", finalApk.path) }
         finalApk.copyTo(rootDir.resolve("../dist/${finalApk.name}"), overwrite = true)
         println("APK: ${finalApk.path} (${finalApk.length() / 1024} KB)")
+    }
+}
+
+// ---------------------------------------------------------------- Play Store bundle (.aab)
+// Google Play requires an Android App Bundle signed with your *upload key*. The key is
+// generated once into release/ (git-ignored) — back it up; you need it for every update.
+val releaseDir = rootDir.resolve("release")
+val uploadKeystore = releaseDir.resolve("upload.keystore")
+val uploadProps = releaseDir.resolve("upload.properties")
+
+val createUploadKey by tasks.registering {
+    onlyIf { !uploadKeystore.exists() }
+    doLast {
+        releaseDir.mkdirs()
+        val chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+        val random = SecureRandom()
+        val password = (1..24).map { chars[random.nextInt(chars.length)] }.joinToString("")
+        project.exec {
+            commandLine(
+                "keytool", "-genkeypair", "-keystore", uploadKeystore.path, "-storetype", "PKCS12",
+                "-storepass", password, "-keypass", password, "-alias", "upload",
+                "-keyalg", "RSA", "-keysize", "4096", "-validity", "10000",
+                "-dname", "CN=Net Speed Test Upload Key",
+            )
+        }
+        uploadProps.writeText("storeFile=upload.keystore\nstorePassword=$password\nkeyAlias=upload\nkeyPassword=$password\n")
+    }
+}
+
+val linkProtoResources by tasks.registering(Exec::class) {
+    dependsOn(processManifest, compileResources)
+    val manifest = layout.buildDirectory.file("manifest/AndroidManifest.xml").get().asFile
+    val compiled = resOut.get().file("compiled.zip").asFile
+    val out = resOut.get().file("resources-proto.zip").asFile
+    inputs.files(manifest, compiled, linkJar)
+    outputs.file(out)
+    commandLine(
+        tool("aapt2"), "link", "--proto-format", "-I", linkJar.path,
+        "--manifest", manifest.path,
+        "--min-sdk-version", "$minSdk", "--target-sdk-version", "$targetSdk",
+        "--version-code", "$appVersionCode", "--version-name", appVersionName,
+        "--auto-add-overlay", "--no-version-vectors",
+        "-o", out.path, compiled.path,
+    )
+}
+
+val assembleBundle by tasks.registering {
+    dependsOn(dex, linkProtoResources, createUploadKey)
+    val bundletool = sdkDir.resolve("bundletool.jar")
+    val finalAab = outDir.get().file("NetSpeedTest-$appVersionName.aab").asFile
+    inputs.files(layout.buildDirectory.file("dex/classes.dex"), resOut.get().file("resources-proto.zip"))
+    outputs.file(finalAab)
+    doLast {
+        val props = Properties().apply { uploadProps.inputStream().use { load(it) } }
+        val password = props.getProperty("storePassword")
+        val stage = layout.buildDirectory.dir("bundle").get().asFile
+        stage.deleteRecursively()
+        val module = File(stage, "base").apply { mkdirs() }
+        project.copy { from(zipTree(resOut.get().file("resources-proto.zip"))); into(File(stage, "proto")) }
+        project.copy { from(File(stage, "proto/AndroidManifest.xml")); into(File(module, "manifest")) }
+        project.copy { from(File(stage, "proto")); include("resources.pb", "res/**"); into(module) }
+        project.copy { from(layout.buildDirectory.file("dex/classes.dex")); into(File(module, "dex")) }
+        val services = File(module, "root/META-INF/services").apply { mkdirs() }
+        File(services, "kotlinx.coroutines.internal.MainDispatcherFactory")
+            .writeText("kotlinx.coroutines.android.AndroidDispatcherFactory\n")
+        File(services, "kotlinx.coroutines.CoroutineExceptionHandler")
+            .writeText("kotlinx.coroutines.android.AndroidExceptionPreHandler\n")
+        project.exec { workingDir = module; commandLine("zip", "-q", "-X", "-r", "../base.zip", ".") }
+        val unsigned = File(stage, "unsigned.aab")
+        project.exec {
+            commandLine("java", "-jar", bundletool.path, "build-bundle", "--modules=${File(stage, "base.zip").path}", "--output=${unsigned.path}")
+        }
+        finalAab.parentFile.mkdirs()
+        finalAab.delete()
+        project.exec {
+            commandLine(
+                "jarsigner", "-keystore", uploadKeystore.path, "-storepass", password, "-keypass", password,
+                "-sigalg", "SHA256withRSA", "-digestalg", "SHA-256",
+                "-signedjar", finalAab.path, unsigned.path, "upload",
+            )
+        }
+        // Verify the bundle the way Play will use it: generate an installable APK from it.
+        val apks = File(stage, "check.apks")
+        project.exec {
+            commandLine(
+                "java", "-jar", bundletool.path, "build-apks", "--bundle=${finalAab.path}", "--output=${apks.path}",
+                "--mode=universal", "--aapt2=${tool("aapt2")}",
+                "--ks=${uploadKeystore.path}", "--ks-pass=pass:$password", "--ks-key-alias=upload", "--key-pass=pass:$password",
+            )
+        }
+        project.copy { from(zipTree(apks)); include("universal.apk"); into(stage) }
+        project.exec { commandLine(tool("aapt2"), "dump", "badging", File(stage, "universal.apk").path) }
+        finalAab.copyTo(rootDir.resolve("../dist/${finalAab.name}"), overwrite = true)
+        println("AAB: ${finalAab.path} (${finalAab.length() / 1024} KB)")
     }
 }
 

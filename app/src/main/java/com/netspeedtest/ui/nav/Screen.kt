@@ -33,6 +33,7 @@ abstract class Screen(protected val env: ScreenEnv) : FrameLayout(env.ui.context
     protected val scroll = ScrollView(context)
     protected val column = LinearLayout(context)
     private val sidePadding = ui.dp(20)
+    private val insets = IntArray(4) // declared before init {}, which applies insets
 
     init {
         setBackgroundColor(ui.palette.background)
@@ -54,7 +55,15 @@ abstract class Screen(protected val env: ScreenEnv) : FrameLayout(env.ui.context
     open fun onBack(): Boolean = false
 
     fun applyInsets(left: Int, top: Int, right: Int, bottom: Int) {
-        column.setPadding(sidePadding + left, top + ui.dp(12), sidePadding + right, bottom + ui.dp(32))
+        insets[0] = left; insets[1] = top; insets[2] = right; insets[3] = bottom
+        // On tablets, foldables and landscape, keep a comfortable reading width and centre it.
+        val extra = if (width > 0) ((width - left - right - ui.dp(MAX_CONTENT_WIDTH_DP)) / 2).coerceAtLeast(0) else 0
+        column.setPadding(sidePadding + left + extra, top + ui.dp(12), sidePadding + right + extra, bottom + ui.dp(32))
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w != oldw) post { applyInsets(insets[0], insets[1], insets[2], insets[3]) }
     }
 
     /** Standard header for secondary screens: back button + title (+ optional trailing view). */
@@ -96,5 +105,9 @@ abstract class Screen(protected val env: ScreenEnv) : FrameLayout(env.ui.context
             this.topMargin = ui.dp(topMargin)
         })
         return view
+    }
+
+    private companion object {
+        const val MAX_CONTENT_WIDTH_DP = 600
     }
 }

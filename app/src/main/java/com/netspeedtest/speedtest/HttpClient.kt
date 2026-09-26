@@ -67,7 +67,7 @@ internal fun HttpURLConnection.requireSuccess() {
     val code = responseCode
     if (code !in 200..299) {
         runCatching { errorStream?.close() }
-        throw SpeedTestException(TestError.ServerUnavailable)
+        throw SpeedTestException(if (code == 429 || code == 503) TestError.ServerBusy else TestError.ServerUnavailable)
     }
 }
 
