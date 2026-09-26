@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App icon foreground: a precise gauge — track, 7 ticks, cyan → blue reading at 70 %,
+     needle and hub. Hand-built geometry on a 108 dp grid (content within the 66 dp safe zone). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:aapt="http://schemas.android.com/aapt"
+        android:width="108dp"
+        android:height="108dp"
+        android:viewportWidth="108"
+        android:viewportHeight="108">
+        <path
+            android:name="track"
+            android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
+            android:strokeWidth="7"
+            android:strokeColor="#FF1A2440"
+            android:strokeLineCap="round" />
+        <path
+            android:name="ticks"
+            android:pathData="M44.87,64.88 L43.07,67.02 M39.82,54.83 L37.03,54.99 M43.67,44.26 L41.63,42.33 M54.00,39.80 L54.00,37.00 M64.33,44.26 L66.37,42.33 M68.18,54.83 L70.97,54.99 M63.13,64.88 L64.93,67.02"
+            android:strokeWidth="1.2"
+            android:strokeColor="#FF4A5A7A"
+            android:strokeLineCap="round" />
+        <path
+            android:name="progress"
+            android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:trimPathEnd="0.7">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:type="sweep" android:centerX="54" android:centerY="54">
+                    <item android:offset="0" android:color="#FF2F5BF5" />
+                    <item android:offset="0.3611" android:color="#FF4DD8F7" />
+                    <item android:offset="0.9056" android:color="#FF2F6BFF" />
+                    <item android:offset="1" android:color="#FF2F5EF7" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <group
+            android:name="needle"
+            android:pivotX="54"
+            android:pivotY="54"
+            >
+            <path
+                android:pathData="M52.19,57.03 L69.23,44.39 A0.55,0.55 0 0,0 68.62,43.48 L50.51,54.55 Z"
+                android:fillColor="#FFF2F5FA" />
+        </group>
+        <group
+            android:name="hub"
+            android:pivotX="54"
+            android:pivotY="54"
+            >
+            <path android:pathData="M54,54 m-3.6,0 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0" android:fillColor="#FFF2F5FA" />
+            <path android:pathData="M54,54 m-1.3,0 a1.3,1.3 0 1,0 2.6,0 a1.3,1.3 0 1,0 -2.6,0" android:fillColor="#FF0B1222" />
+        </group>
+</vector>

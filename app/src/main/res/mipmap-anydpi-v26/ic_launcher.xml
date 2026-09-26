@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Deep-navy face + the glowing gauge from the app's icon artwork. -->
     <background android:drawable="@color/icon_background" />
-    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
-    <!-- Android 13+ themed icons use this single-colour outline of the gauge. -->
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

@@ -1,198 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launch animation (Android 12+), a vector rendition of the app icon artwork, 1 s:
-       0–320 ms   gauge rotates in and grows; the tick ring fades in
-     100–800 ms   the teal → cyan → blue arc (with its glow) sweeps round like a speed test
-     380–680 ms   the silver knob pops in
-     650–1000 ms  a soft cyan ring pulses out from the knob
-     Generated to match the icon's colours; pure vector, animates at any resolution. -->
+<!-- Launch intro (1 s), built from the exact icon geometry so it ends on the icon:
+       0–300 ms   track draws in, ticks fade in
+     150–650 ms   reading arc and needle sweep up together (to 86 %)
+     650–950 ms   both ease back to the resting 70 % — like a speed test settling
+     100–400 ms   hub pops in -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt">
     <aapt:attr name="android:drawable">
-        <vector
-            android:width="108dp"
-            android:height="108dp"
-            android:viewportWidth="108"
-            android:viewportHeight="108">
-            <group
-                android:name="gauge"
-                android:pivotX="54"
-                android:pivotY="54"
-                android:rotation="-35"
-                android:scaleX="0.85"
-                android:scaleY="0.85">
-                <path
-                    android:name="ticks"
-                    android:pathData="M43.59,66.41 L41.66,68.71 M40.82,65.06 L39.29,66.34 M39.10,62.60 L37.37,63.60 M37.84,59.88 L35.96,60.57 M38.05,56.81 L35.09,57.33 M36.80,54.00 L34.80,54.00 M37.06,51.01 L35.09,50.67 M37.84,48.12 L35.96,47.43 M39.97,45.90 L37.37,44.40 M40.82,42.94 L39.29,41.66 M42.94,40.82 L41.66,39.29 M45.40,39.10 L44.40,37.37 M48.46,38.78 L47.43,35.96 M51.01,37.06 L50.67,35.09 M54.00,36.80 L54.00,34.80 M56.99,37.06 L57.33,35.09 M59.54,38.78 L60.57,35.96 M62.60,39.10 L63.60,37.37 M65.06,40.82 L66.34,39.29 M67.18,42.94 L68.71,41.66 M68.03,45.90 L70.63,44.40 M70.16,48.12 L72.04,47.43 M70.94,51.01 L72.91,50.67 M71.20,54.00 L73.20,54.00 M69.95,56.81 L72.91,57.33 M70.16,59.88 L72.04,60.57 M68.90,62.60 L70.63,63.60 M67.18,65.06 L68.71,66.34 M64.41,66.41 L66.34,68.71"
-                    android:strokeWidth="0.7"
-                    android:strokeColor="#FF9AA6B6"
-                    android:strokeLineCap="round"
-                    android:strokeAlpha="0" />
-                <path
-                    android:name="glowOuter"
-                    android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
-                    android:strokeWidth="15"
-                    android:strokeAlpha="0.07"
-                    android:strokeLineCap="round"
-                    android:trimPathEnd="0">
-                    <aapt:attr name="android:strokeColor">
-                        <gradient android:type="sweep" android:centerX="54" android:centerY="54">
-                            <item android:offset="0.00" android:color="#FF127FF4" />
-                            <item android:offset="0.14" android:color="#FF0E43E1" />
-                            <item android:offset="0.36" android:color="#FF0E6A86" />
-                            <item android:offset="0.55" android:color="#FF0F95AE" />
-                            <item android:offset="0.75" android:color="#FF29CEE1" />
-                            <item android:offset="0.86" android:color="#FF2BD9EC" />
-                            <item android:offset="0.905" android:color="#FF1476F2" />
-                            <item android:offset="1.00" android:color="#FF127FF4" />
-                        </gradient>
-                    </aapt:attr>
-                </path>
-                <path
-                    android:name="glow"
-                    android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
-                    android:strokeWidth="10"
-                    android:strokeAlpha="0.22"
-                    android:strokeLineCap="round"
-                    android:trimPathEnd="0">
-                    <aapt:attr name="android:strokeColor">
-                        <gradient android:type="sweep" android:centerX="54" android:centerY="54">
-                            <item android:offset="0.00" android:color="#FF127FF4" />
-                            <item android:offset="0.14" android:color="#FF0E43E1" />
-                            <item android:offset="0.36" android:color="#FF0E6A86" />
-                            <item android:offset="0.55" android:color="#FF0F95AE" />
-                            <item android:offset="0.75" android:color="#FF29CEE1" />
-                            <item android:offset="0.86" android:color="#FF2BD9EC" />
-                            <item android:offset="0.905" android:color="#FF1476F2" />
-                            <item android:offset="1.00" android:color="#FF127FF4" />
-                        </gradient>
-                    </aapt:attr>
-                </path>
-                <path
-                    android:name="arc"
-                    android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
-                    android:strokeWidth="5"
-                    android:strokeAlpha="1"
-                    android:strokeLineCap="round"
-                    android:trimPathEnd="0">
-                    <aapt:attr name="android:strokeColor">
-                        <gradient android:type="sweep" android:centerX="54" android:centerY="54">
-                            <item android:offset="0.00" android:color="#FF127FF4" />
-                            <item android:offset="0.14" android:color="#FF0E43E1" />
-                            <item android:offset="0.36" android:color="#FF0E6A86" />
-                            <item android:offset="0.55" android:color="#FF0F95AE" />
-                            <item android:offset="0.75" android:color="#FF29CEE1" />
-                            <item android:offset="0.86" android:color="#FF2BD9EC" />
-                            <item android:offset="0.905" android:color="#FF1476F2" />
-                            <item android:offset="1.00" android:color="#FF127FF4" />
-                        </gradient>
-                    </aapt:attr>
-                </path>
-                <group
-                    android:name="pulse"
-                    android:pivotX="54"
-                    android:pivotY="54">
-                    <path
-                        android:name="pulseRing"
-                        android:pathData="M54,54 m-4.4,0 a4.4,4.4 0 1,0 8.8,0 a4.4,4.4 0 1,0 -8.8,0"
-                        android:strokeWidth="0.9"
-                        android:strokeColor="#FF4DD8F7"
-                        android:strokeAlpha="0" />
-                </group>
-                <group
-                    android:name="knob"
-                    android:pivotX="54"
-                    android:pivotY="54"
-                    android:scaleX="0"
-                    android:scaleY="0">
-                    <path
-                        android:pathData="M54,54 m-4.4,0 a4.4,4.4 0 1,0 8.8,0 a4.4,4.4 0 1,0 -8.8,0"
-                        android:strokeWidth="0.6"
-                        android:strokeColor="#FF2B313A">
-                        <aapt:attr name="android:fillColor">
-                            <gradient android:type="radial" android:centerX="52.6" android:centerY="52.4" android:gradientRadius="6">
-                                <item android:offset="0" android:color="#FFFFFFFF" />
-                                <item android:offset="0.45" android:color="#FFC7CED7" />
-                                <item android:offset="1" android:color="#FF5F6875" />
-                            </gradient>
-                        </aapt:attr>
-                    </path>
-                </group>
-            </group>
-        </vector>
+    <vector xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:aapt="http://schemas.android.com/aapt"
+        android:width="108dp"
+        android:height="108dp"
+        android:viewportWidth="108"
+        android:viewportHeight="108">
+        <path
+            android:name="track"
+            android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
+            android:strokeWidth="7"
+            android:strokeColor="#FF1A2440"
+            android:strokeLineCap="round" android:trimPathEnd="0" />
+        <path
+            android:name="ticks"
+            android:pathData="M44.87,64.88 L43.07,67.02 M39.82,54.83 L37.03,54.99 M43.67,44.26 L41.63,42.33 M54.00,39.80 L54.00,37.00 M64.33,44.26 L66.37,42.33 M68.18,54.83 L70.97,54.99 M63.13,64.88 L64.93,67.02"
+            android:strokeWidth="1.2"
+            android:strokeColor="#FF4A5A7A"
+            android:strokeLineCap="round" android:strokeAlpha="0" />
+        <path
+            android:name="progress"
+            android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:trimPathEnd="0">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:type="sweep" android:centerX="54" android:centerY="54">
+                    <item android:offset="0" android:color="#FF2F5BF5" />
+                    <item android:offset="0.3611" android:color="#FF4DD8F7" />
+                    <item android:offset="0.9056" android:color="#FF2F6BFF" />
+                    <item android:offset="1" android:color="#FF2F5EF7" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <group
+            android:name="needle"
+            android:pivotX="54"
+            android:pivotY="54"
+            android:rotation="-196.0">
+            <path
+                android:pathData="M52.19,57.03 L69.23,44.39 A0.55,0.55 0 0,0 68.62,43.48 L50.51,54.55 Z"
+                android:fillColor="#FFF2F5FA" />
+        </group>
+        <group
+            android:name="hub"
+            android:pivotX="54"
+            android:pivotY="54"
+            android:scaleX="0" android:scaleY="0">
+            <path android:pathData="M54,54 m-3.6,0 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0" android:fillColor="#FFF2F5FA" />
+            <path android:pathData="M54,54 m-1.3,0 a1.3,1.3 0 1,0 2.6,0 a1.3,1.3 0 1,0 -2.6,0" android:fillColor="#FF0B1222" />
+        </group>
+    </vector>
     </aapt:attr>
-
-    <target android:name="gauge">
+    <target android:name="track">
         <aapt:attr name="android:animation">
-            <set>
-                <objectAnimator android:propertyName="rotation" android:duration="320"
-                    android:valueFrom="-35" android:valueTo="0" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/fast_out_slow_in" />
-                <objectAnimator android:propertyName="scaleX" android:duration="320"
-                    android:valueFrom="0.85" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/fast_out_slow_in" />
-                <objectAnimator android:propertyName="scaleY" android:duration="320"
-                    android:valueFrom="0.85" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/fast_out_slow_in" />
-            </set>
+            <objectAnimator android:propertyName="trimPathEnd" android:duration="300"
+                android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
         </aapt:attr>
     </target>
     <target android:name="ticks">
         <aapt:attr name="android:animation">
-            <objectAnimator android:propertyName="strokeAlpha" android:duration="300"
-                    android:valueFrom="0" android:valueTo="0.85" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/fast_out_slow_in" />
+            <objectAnimator android:propertyName="strokeAlpha" android:duration="300" android:startOffset="60"
+                android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
         </aapt:attr>
     </target>
-    <target android:name="glowOuter">
+    <target android:name="progress">
         <aapt:attr name="android:animation">
-            <objectAnimator android:propertyName="trimPathEnd" android:duration="700" android:startOffset="100"
-                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_cubic" />
-        </aapt:attr>
-    </target>
-    <target android:name="glow">
-        <aapt:attr name="android:animation">
-            <objectAnimator android:propertyName="trimPathEnd" android:duration="700" android:startOffset="100"
-                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_cubic" />
-        </aapt:attr>
-    </target>
-    <target android:name="arc">
-        <aapt:attr name="android:animation">
-            <objectAnimator android:propertyName="trimPathEnd" android:duration="700" android:startOffset="100"
-                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_cubic" />
-        </aapt:attr>
-    </target>
-    <target android:name="knob">
-        <aapt:attr name="android:animation">
-            <set>
-                <objectAnimator android:propertyName="scaleX" android:duration="300" android:startOffset="380"
-                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/overshoot" />
-                <objectAnimator android:propertyName="scaleY" android:duration="300" android:startOffset="380"
-                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/overshoot" />
+            <set android:ordering="sequentially">
+                <objectAnimator android:propertyName="trimPathEnd" android:duration="500" android:startOffset="150"
+                android:valueFrom="0" android:valueTo="0.86" android:valueType="floatType"
+                android:interpolator="@android:interpolator/decelerate_cubic" />
+                <objectAnimator android:propertyName="trimPathEnd" android:duration="300"
+                android:valueFrom="0.86" android:valueTo="0.7" android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
             </set>
         </aapt:attr>
     </target>
-    <target android:name="pulse">
+    <target android:name="needle">
         <aapt:attr name="android:animation">
-            <set>
-                <objectAnimator android:propertyName="scaleX" android:duration="350" android:startOffset="650"
-                    android:valueFrom="1" android:valueTo="3.2" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_cubic" />
-                <objectAnimator android:propertyName="scaleY" android:duration="350" android:startOffset="650"
-                    android:valueFrom="1" android:valueTo="3.2" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_cubic" />
+            <set android:ordering="sequentially">
+                <objectAnimator android:propertyName="rotation" android:duration="500" android:startOffset="150"
+                android:valueFrom="-196.0" android:valueTo="44.8" android:valueType="floatType"
+                android:interpolator="@android:interpolator/decelerate_cubic" />
+                <objectAnimator android:propertyName="rotation" android:duration="300"
+                android:valueFrom="44.8" android:valueTo="0" android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
             </set>
         </aapt:attr>
     </target>
-    <target android:name="pulseRing">
+    <target android:name="hub">
         <aapt:attr name="android:animation">
-            <objectAnimator android:propertyName="strokeAlpha" android:duration="350" android:startOffset="650"
-                    android:valueFrom="0.85" android:valueTo="0" android:valueType="floatType"
-                    android:interpolator="@android:interpolator/decelerate_quad" />
+            <set>
+                <objectAnimator android:propertyName="scaleX" android:duration="300" android:startOffset="100"
+                android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                android:interpolator="@android:interpolator/overshoot" />
+                <objectAnimator android:propertyName="scaleY" android:duration="300" android:startOffset="100"
+                android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                android:interpolator="@android:interpolator/overshoot" />
+            </set>
         </aapt:attr>
     </target>
 </animated-vector>

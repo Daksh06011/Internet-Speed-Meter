@@ -136,24 +136,25 @@ class StoreAndDeviceCoverageTest {
     @Config(sdk = [36])
     fun playStoreGraphics() {
         val p = Palette.Dark
-        // Full-resolution cut-out of the icon artwork (the gauge without bezel or white background).
-        val art = javaClass.classLoader!!.getResourceAsStream("brand/gauge-art.png")!!.use { android.graphics.BitmapFactory.decodeStream(it) }
-        val face = 0xFF010411.toInt()
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        // Rendered from the launcher icon's own vector, so store art and app icon are identical.
+        val face = 0xFF0B1222.toInt()
+        val art = app.getDrawable(app.resources.getIdentifier("ic_launcher_foreground", "drawable", app.packageName))!!
 
-        // 512 × 512 Play icon: full-bleed navy face with the gauge centred (Play applies its own rounded mask).
+        // 512 × 512 Play icon: full-bleed navy tile, gauge scaled up to fill it (Play applies its own mask).
         val icon = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         Canvas(icon).apply {
             drawColor(face)
-            val size = 512f * 1.0f
-            drawBitmap(art, null, RectF(256 - size / 2, 256 - size / 2, 256 + size / 2, 256 + size / 2), paint)
+            val size = 512 * 1.42f
+            art.setBounds((256 - size / 2).toInt(), (256 - size / 2).toInt(), (256 + size / 2).toInt(), (256 + size / 2).toInt())
+            art.draw(this)
         }
         save(icon, "icon-512")
 
         val feature = Bitmap.createBitmap(1024, 500, Bitmap.Config.ARGB_8888)
         Canvas(feature).apply {
             drawColor(face)
-            drawBitmap(art, null, RectF(520f, 0f, 1020f, 500f), paint)
+            art.setBounds(420, -130, 1180, 630)
+            art.draw(this)
             val text = Paint(Paint.ANTI_ALIAS_FLAG)
             text.typeface = Fonts.sans(600); text.textSize = 68f; text.color = p.textPrimary; text.letterSpacing = -0.02f
             drawText("Net Speed Test", 72f, 220f, text)
