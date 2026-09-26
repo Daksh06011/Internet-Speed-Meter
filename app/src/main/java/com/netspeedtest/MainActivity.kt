@@ -46,6 +46,9 @@ import kotlinx.coroutines.launch
 class MainActivity : Activity() {
     private lateinit var host: ScreenHost
     private lateinit var sheets: SheetHost
+    private lateinit var intro: com.netspeedtest.ui.components.LaunchOverlay
+    /** True after the app went to the background, so the next onStart is a "re-open". */
+    private var backgrounded = false
     private var scope: CoroutineScope? = null
     private var backCallback: OnBackInvokedCallback? = null
 
@@ -64,11 +67,14 @@ class MainActivity : Activity() {
             setBackgroundColor(palette.background)
             addView(host, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
             addView(sheets, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            intro = com.netspeedtest.ui.components.LaunchOverlay(this@MainActivity)
+            addView(intro, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         }
         root.setOnApplyWindowInsetsListener { _, insets -> applyInsets(insets) }
         setContentView(root)
         setupWindow(palette) // after setContentView: the insets controller needs the decor view
-        if (savedInstanceState == null) playLaunchAnimation(root)
+        handOffSystemSplash()
+        if (savedInstanceState == null) playIntro()
 
         graph.navigator.listener = { route, forward ->
             sheets.dismiss()
@@ -98,29 +104,18 @@ class MainActivity : Activity() {
     }
 
     /**
-     * Android 12+ shows the animated gauge icon on the launch screen. On a cold start we
-     * let it finish (it's under a second) and then fade/zoom the splash away smoothly.
-     * Skipped entirely when the user has turned animations off.
+     * Plays the gauge intro. Runs on every open — cold start, from memory or from recents —
+     * but not for rotation/theme changes. The system launch screen (Android 12+) only shows
+     * the static navy disc, removed instantly, so the intro continues from it seamlessly.
      */
-    private fun playLaunchAnimation(content: View) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !android.animation.ValueAnimator.areAnimatorsEnabled()) return
-        val start = android.os.SystemClock.uptimeMillis()
-        content.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                if (android.os.SystemClock.uptimeMillis() - start < LAUNCH_ANIMATION_MS) return false
-                content.viewTreeObserver.removeOnPreDrawListener(this)
-                return true
-            }
-        })
-        splashScreen.setOnExitAnimationListener { splash ->
-            splash.animate()
-                .alpha(0f)
-                .scaleX(1.06f)
-                .scaleY(1.06f)
-                .setDuration(220)
-                .setInterpolator(com.netspeedtest.ui.components.Motion.Standard)
-                .withEndAction { splash.remove() }
-                .start()
+    private fun playIntro() {
+        if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+        intro.play()
+    }
+
+    private fun handOffSystemSplash() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splash -> splash.remove() }
         }
     }
 
@@ -176,11 +171,16 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         host.setForeground(true)
+        if (backgrounded) {
+            backgrounded = false
+            playIntro() // re-opened from memory / recents
+        }
     }
 
     override fun onStop() {
         super.onStop()
         host.setForeground(false)
+        if (!isChangingConfigurations) backgrounded = true
         // Never keep testing unseen: leaving the app stops the test (rotation does not).
         if (!isChangingConfigurations && graph.speedTest.uiState.value.isRunning) {
             graph.speedTest.cancel(TestError.Backgrounded)
@@ -225,10 +225,5 @@ class MainActivity : Activity() {
             @Suppress("DEPRECATION")
             super.onBackPressed()
         }
-    }
-
-    private companion object {
-        /** Matches windowSplashScreenAnimationDuration in values-v31/themes.xml. */
-        const val LAUNCH_ANIMATION_MS = 1_000L
     }
 }

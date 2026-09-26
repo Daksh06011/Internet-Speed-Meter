@@ -20,7 +20,7 @@ All screenshots in `docs/screenshots/` are produced by the automated UI tests, w
 - **Temperature.** Live battery temperature with battery health and charging status.
 - **History.** Stored locally only. You can delete single results or clear everything (with confirmation).
 - **Settings.** Theme (System / Light / Dark, default Dark), unit (Mbps / MB/s), keep the screen on during tests, and haptics.
-- **App icon & launch animation.** The launcher icon is the glowing-gauge artwork (cut out of its bezel and white background, on a deep-navy adaptive-icon background so every launcher shape crops it cleanly; themed-icon outline on Android 13+). On Android 12+ a vector rendition of the same gauge animates on launch: it rotates in, the ticks fade in, the teal → cyan → blue arc sweeps round, the silver knob pops and a soft ring pulses out (1 s, cold start only, skipped when animations are off).
+- **App icon & launch animation.** The launcher icon is the glowing-gauge artwork (cut out of its bezel and white background, on a deep-navy adaptive-icon background so every launcher shape crops it cleanly; themed-icon outline on Android 13+). Every time the app is opened (fresh start, from memory or from recents; all Android versions) a vector rendition of the same gauge plays as an intro: it rotates in, the ticks fade in, the teal → cyan → blue arc sweeps round, the silver knob pops and a soft ring pulses out, then it fades into the app (1.2 s; not replayed on rotation; skipped when animations are off). The Android 12+ system launch screen shows only the navy disc, so the intro continues from it seamlessly.
 - **Motion and accessibility.** Spring press states, number interpolation, staggered entrances and a one-shot completion pulse. Haptics follow system settings. Everything respects "Remove animations". Views have TalkBack descriptions, touch targets are at least 48 dp, layouts survive font scaling, and states are never shown by colour alone.
 
 ## Architecture
@@ -97,7 +97,7 @@ gradle -p offline-build assembleApk assembleBundle test smokeTest  # APK + AAB i
 ```
 
 ## Testing performed
-42 automated tests plus a smoke test of the shrunk release code, all passing:
+43 automated tests plus a smoke test of the shrunk release code, all passing:
 - **Engine end-to-end over real loopback sockets** against a bandwidth-throttled HTTP server. At a 48 Mbps throttle it measured 47.8 Mbps. Cancellation closes every stream in about 0.3 s, with no bytes flowing afterwards. Server errors, refused connections and stalled transfers each map to the right error.
 - **Controller.** A full test runs through the UI state machine and is saved to history. A double tap is ignored. Cancel works, and late updates cannot revive a cancelled test.
 - **UI (Robolectric, real rendering).** The home screen shows real battery readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Values a phone doesn't report are hidden, never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.

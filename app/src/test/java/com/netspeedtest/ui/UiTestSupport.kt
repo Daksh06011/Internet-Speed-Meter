@@ -20,7 +20,7 @@ import java.time.Duration
 
 /** Helpers shared by the Robolectric UI tests. */
 object UiTestSupport {
-    fun idle(ms: Long = 1_200) {
+    fun idle(ms: Long = 1_500) { // covers the 1.2 s launch intro
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
     }
 
