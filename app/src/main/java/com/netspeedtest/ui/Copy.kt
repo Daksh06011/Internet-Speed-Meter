@@ -2,7 +2,6 @@ package com.netspeedtest.ui
 
 import com.netspeedtest.device.ChargeStatus
 import com.netspeedtest.device.PowerSource
-import com.netspeedtest.device.ThermalLevel
 import com.netspeedtest.speedtest.TestError
 
 /** Human-friendly wording for states and errors. Never exposes raw exceptions. */
@@ -35,13 +34,6 @@ object Copy {
         PowerSource.Wireless -> "Wireless"
         PowerSource.Dock -> "Dock"
         PowerSource.Unknown -> "Unknown"
-    }
-
-    fun thermal(level: ThermalLevel): String = when (level) {
-        ThermalLevel.Normal -> "Normal"
-        ThermalLevel.Warm -> "Warm"
-        ThermalLevel.Hot -> "Hot"
-        ThermalLevel.Severe -> "Severe"
     }
 
     const val UNAVAILABLE_DEVICE = "Unavailable on this device"

@@ -14,3 +14,6 @@
 -dontnote **
 -target 1.7
 -dontwarn androidx.annotation.**
+# ProGuard's optimizer produced unverifiable bytecode (VerifyError at startup) on
+# Kotlin coroutines code; shrinking + obfuscation alone are safe. (R8 in the AGP build is unaffected.)
+-dontoptimize

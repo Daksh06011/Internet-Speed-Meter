@@ -85,10 +85,8 @@ dependencies {
     testImplementation(files(sdkDir.resolve("androidx-test-shim.jar")))
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("-Xlint:-options"))
-    classpath += files(compileJar)
-}
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.addAll(listOf("-Xlint:-options")) }
+tasks.named<JavaCompile>("compileJava") { classpath += files(compileJar) }
 
 // ---------------------------------------------------------------- resources
 val processManifest by tasks.registering {
@@ -150,7 +148,7 @@ val shrink by tasks.registering(JavaExec::class) {
     val mapping = layout.buildDirectory.file("proguard/mapping.txt").get().asFile
     val runtime = configurations.runtimeClasspath.get()
     val classDirs = sourceSets.main.get().output.classesDirs
-    inputs.files(classDirs, runtime, appDir.resolve("proguard-rules.pro"), resOut.get().file("aapt_rules.pro"))
+    inputs.files(classDirs, runtime, appDir.resolve("proguard-rules.pro"), resOut.get().file("aapt_rules.pro"), rootDir.resolve("offline-rules.pro"))
     outputs.files(out, mapping)
     classpath = buildscript.configurations["classpath"]
     mainClass.set("proguard.ProGuard")
@@ -253,4 +251,27 @@ tasks.test {
     systemProperty("screenshots.dir", rootDir.resolve("../docs/screenshots").path)
     maxHeapSize = "3g"
     testLogging { events("passed", "failed", "skipped"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+}
+
+// ---------------------------------------------------------------- smoke test of the shrunk code
+val smoke by sourceSets.creating { java.srcDir("src/smoke/java") }
+val smokeImplementation by configurations.getting
+dependencies {
+    smokeImplementation(files(layout.buildDirectory.file("proguard/app.jar")))
+    smokeImplementation("junit:junit:4.13.2")
+    smokeImplementation("org.robolectric:robolectric:4.16.1") {
+        exclude(group = "androidx.test")
+        exclude(group = "androidx.test.espresso")
+    }
+    smokeImplementation(files(sdkDir.resolve("androidx-test-shim.jar")))
+    "smokeCompileOnly"(files(compileJar))
+    "smokeRuntimeOnly"("org.robolectric:android-all:14-robolectric-10818077")
+}
+tasks.named("compileSmokeJava") { dependsOn(shrink) }
+val smokeTest by tasks.registering(Test::class) {
+    dependsOn(shrink, robolectricConfig)
+    testClassesDirs = smoke.output.classesDirs
+    classpath = smoke.runtimeClasspath + files(layout.buildDirectory.dir("robolectric-config"))
+    maxHeapSize = "3g"
+    testLogging { events("passed", "failed"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
 }

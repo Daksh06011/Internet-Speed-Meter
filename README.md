@@ -2,7 +2,7 @@
 
 A small, fast, privacy-first Android speed test and device-health utility with a soft neumorphic interface. It uses no gradients, glass or fake numbers.
 
-**APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (232 KB, minSdk 28 / Android 9, targetSdk 35, signed with a debug key for sideloading)
+**APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (256 KB, minSdk 28 / Android 9, targetSdk 35, signed with a debug key for sideloading)
 
 | Home (dark) | Result | Light theme |
 |---|---|---|
@@ -15,7 +15,7 @@ All screenshots in `docs/screenshots/` are produced by the automated UI tests, w
 - **Result summary.** Results are rated for browsing, streaming, gaming and video calls against documented thresholds (`QualityThresholds`). The summary also shows data used, the server and the network.
 - **Device health.** Tiles for battery, charging/power draw, temperature, network, memory and live traffic. Each tile opens a detail screen.
 - **Charging monitor.** Live current (mA), estimated watts, a session chart, and session average and peak values.
-- **Temperature.** Battery temperature, Android thermal status (Normal / Warm / Hot / Severe) and throttling headroom. CPU, GPU and skin temperatures are honestly marked as not available.
+- **Temperature.** Live battery temperature with battery health and charging status.
 - **History.** Stored locally only. You can delete single results or clear everything (with confirmation).
 - **Settings.** Theme (System / Light / Dark, default Dark), unit (Mbps / MB/s), keep the screen on during tests, and haptics.
 - **Motion and accessibility.** Spring press states, number interpolation, staggered entrances and a one-shot completion pulse. Haptics follow system settings. Everything respects "Remove animations". Views have TalkBack descriptions, touch targets are at least 48 dp, layouts survive font scaling, and states are never shown by colour alone.
@@ -31,7 +31,7 @@ app/src/main/java/com/netspeedtest/
 │   ├── Measurements      ThroughputMeter (allocation-free ring buffer), LatencyStats
 │   ├── SpeedTestEngine   orchestrates phases + loaded-latency probes
 │   └── QualityRating     all interpretation thresholds in one place
-├── device/      Battery, Thermal, Network, Traffic, Memory providers (cold Flows)
+├── device/      Battery, Network, Traffic, Memory providers (cold Flows)
 ├── data/        SettingsRepository (SharedPreferences), HistoryRepository (tiny JSON file)
 ├── state/       SpeedTestController: one test at a time, immutable TestUiState via StateFlow
 └── ui/          Palette/typography, neumorphic components, navigator, screens
@@ -41,7 +41,7 @@ app/src/main/java/com/netspeedtest/
 - Unidirectional flow: engine → controller `StateFlow` → screen `render(state)`.
 
 ### Why Views instead of Jetpack Compose
-The build environment could not reach Google's Maven repository, which hosts Compose, AndroidX and the Android Gradle Plugin. To deliver a real, compiled, tested APK, the UI uses the Android framework directly with custom-drawn components. This also serves the performance goals: no Compose runtime, a 232 KB APK, fast cold start, no recomposition overhead, and redraws only when something changes.
+The build environment could not reach Google's Maven repository, which hosts Compose, AndroidX and the Android Gradle Plugin. To deliver a real, compiled, tested APK, the UI uses the Android framework directly with custom-drawn components. This also serves the performance goals: no Compose runtime, a 256 KB APK, fast cold start, no recomposition overhead, and redraws only when something changes.
 
 ## Permissions
 | Permission | Why |
@@ -74,15 +74,10 @@ Limits: Wi‑Fi/Ethernet allow 12 s / 600 MB down and 10 s / 250 MB up. Metered 
 - **Power (estimate)** = voltage (`EXTRA_VOLTAGE`, normalised from mV) × current. It is always labelled as an estimate.
 - **Capacity (estimate)** = `CHARGE_COUNTER` ÷ level. Cycle count uses `EXTRA_CYCLE_COUNT` on Android 14+.
 
-## Metrics that may be unavailable
-Some values depend on the phone. When a value isn't available, the app says so ("Unavailable" or "Not exposed to apps") instead of making one up:
-- **CPU / GPU / skin temperature.** Android restricts these to device-owner apps.
-- **Battery current / power.** Some OEM fuel gauges don't report current.
-- **Thermal status** needs Android 10+. **Headroom** needs Android 11+ and OEM support.
-- **Wi‑Fi link speed, band and standard** need Android 12+ (they are read without location permission). The Wi‑Fi name is never read.
-- **Cellular generation.** This comes from the network subtype, which needs no permission. 5G non-standalone appears as 4G. Cellular signal is shown only when Android provides a plausible dBm value.
-- **Charge cycles** need Android 14+. **Capacity** needs a working charge counter.
-- **Live traffic** is device-wide (`TrafficStats`), not per app.
+## Device details
+- **Wi‑Fi link speed, band and standard** need Android 12+ (read without location permission; the Wi‑Fi name is never read).
+- **5G non-standalone** connections are reported by Android as 4G.
+- **Charge cycles** need Android 14+.
 
 ## Building
 **Android Studio.** Open the project root and build as usual (AGP 8.13, Kotlin 2.2, JDK 17+). Run `./gradlew assembleRelease` for a minified release build, or `./gradlew testDebugUnitTest` to run the tests.
@@ -95,12 +90,12 @@ gradle -p offline-build assembleApk test  # APK is copied to dist/, screenshots 
 ```
 
 ## Testing performed
-32 automated tests, all passing:
+33 automated tests, all passing:
 - **Engine end-to-end over real loopback sockets** against a bandwidth-throttled HTTP server. At a 48 Mbps throttle it measured 47.8 Mbps. Cancellation closes every stream in about 0.3 s, with no bytes flowing afterwards. Server errors, refused connections and stalled transfers each map to the right error.
 - **Controller.** A full test runs through the UI state machine and is saved to history. A double tap is ignored. Cancel works, and late updates cannot revive a cancelled test.
-- **UI (Robolectric, real rendering).** The home screen shows real battery and thermal readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Unavailable sensors are never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.
+- **UI (Robolectric, real rendering).** The home screen shows real battery readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Values a phone doesn't report are hidden, never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.
 
-The tests found and fixed one real bug: a crash from reading the window insets controller before the decor view existed (Android 11+).
+The tests found and fixed two real bugs: a crash from reading the window insets controller before the decor view existed (Android 11+), and a startup `VerifyError` caused by ProGuard's optimizer in the offline build (optimization is now disabled; a smoke test runs the exact shrunk code that goes into the APK).
 
 ## Known limitations
 - The app has not been run on a physical device or emulator. The build environment had neither, and emulator images are also hosted on the blocked Google servers. Behaviour was verified with Robolectric and real-socket JVM tests.

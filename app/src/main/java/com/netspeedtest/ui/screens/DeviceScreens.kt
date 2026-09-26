@@ -10,8 +10,6 @@ import com.netspeedtest.device.ChargeStatus
 import com.netspeedtest.device.ConnectionKind
 import com.netspeedtest.device.MemorySnapshot
 import com.netspeedtest.device.NetworkSnapshot
-import com.netspeedtest.device.ThermalLevel
-import com.netspeedtest.device.ThermalSnapshot
 import com.netspeedtest.device.TrafficRate
 import com.netspeedtest.ui.Copy
 import com.netspeedtest.ui.Formats
@@ -95,8 +93,7 @@ class BatteryScreen(env: ScreenEnv) : DetailScreen(env, "Battery") {
             ui.noteCard(
                 "About these values",
                 "All readings come from Android's public BatteryManager API. Current is smoothed over a few seconds. " +
-                    "Power is an estimate (voltage × current). Capacity is estimated from the charge counter and level. " +
-                    "Anything your phone doesn't report is shown as Unavailable rather than guessed.",
+                    "Power is an estimate (voltage × current). Capacity is estimated from the charge counter and level.",
             ),
             topMargin = 16,
         )
@@ -125,10 +122,14 @@ class BatteryScreen(env: ScreenEnv) : DetailScreen(env, "Battery") {
         health.set(b.health)
         temperature.set(b.temperatureC?.let(Formats::celsius))
         voltage.set(b.voltageV?.let { String.format(Locale.getDefault(), "%.2f V", it) })
+        current.showIf(b.currentMa != null)
+        power.showIf(b.powerW != null)
+        cycles.showIf(b.cycleCount != null)
+        capacity.showIf(b.capacityEstimateMah != null)
         current.set(b.currentMa?.let(Formats::signedMa), b.currentMa?.let { if (it >= 0) "Into battery" else "Out of battery" })
         power.set(b.powerW?.let { "≈ ${Formats.watts(it)}" }, if (b.powerW != null) "Estimate · V × I" else null)
         technology.set(b.technology)
-        cycles.set(b.cycleCount?.toString(), if (b.cycleCount == null) "Needs Android 14+" else null)
+        cycles.set(b.cycleCount?.toString())
         capacity.set(b.capacityEstimateMah?.let { String.format(Locale.getDefault(), "≈ %,.0f mAh", it) }, if (b.capacityEstimateMah != null) "Estimate" else null)
     }
 
@@ -157,6 +158,7 @@ class ChargingScreen(env: ScreenEnv) : DetailScreen(env, "Charging") {
     private var sum = 0.0
     private var samples = 0
     private var peakMa: Double? = null
+    private var note: View? = null
 
     init {
         hero.addView(chart, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(96)).apply {
@@ -167,7 +169,7 @@ class ChargingScreen(env: ScreenEnv) : DetailScreen(env, "Charging") {
         })
         sectionLabel("This session")
         addBlock(ui.rowsCard(listOf(average, peak, voltage, temperature, source, level)))
-        addBlock(
+        note = addBlock(
             ui.noteCard(
                 "How this is measured",
                 "Current is read from BatteryManager.CURRENT_NOW once per second and averaged over 5 readings. " +
@@ -194,14 +196,17 @@ class ChargingScreen(env: ScreenEnv) : DetailScreen(env, "Charging") {
         }
         setHero(
             label,
-            current?.let(Formats::signedMa),
+            current?.let(Formats::signedMa) ?: b.levelPercent?.let { "$it%" },
             when {
-                current == null -> "This device doesn't report battery current."
+                current == null -> if (b.isPluggedIn) Copy.source(b.source) else Copy.status(b.status)
                 b.powerW != null -> "≈ ${Formats.watts(b.powerW)} estimated"
-                else -> "Power estimate unavailable"
+                else -> ""
             },
             color,
         )
+        average.showIf(current != null)
+        peak.showIf(current != null)
+        note?.visibility = if (current != null) View.VISIBLE else View.GONE
         chart.visibility = if (current == null) View.GONE else View.VISIBLE
         chartCaption.visibility = chart.visibility
         if (current != null) {
@@ -221,82 +226,26 @@ class ChargingScreen(env: ScreenEnv) : DetailScreen(env, "Charging") {
 }
 
 class TemperatureScreen(env: ScreenEnv) : DetailScreen(env, "Temperature") {
-    private val levels = ThermalLevel.entries.map { lvl ->
-        ui.text(TextStyle.Caption, Copy.thermal(lvl), palette.textTertiary).apply {
-            gravity = Gravity.CENTER
-            minHeight = ui.dp(40)
-        }
-    }
-    private val scale = LinearLayout(context).apply {
-        orientation = LinearLayout.HORIZONTAL
-        background = NeuDrawable(ui.palette, ui.dp(16f), NeuDrawable.Style.Inset, ui.density, elevation = 0.6f)
-        setPadding(ui.dp(4), ui.dp(4), ui.dp(4), ui.dp(4))
-        unclip()
-    }
-    private val status = InfoRow(ui, "Thermal status")
-    private val headroom = InfoRow(ui, "Throttling headroom")
-    private val battery = InfoRow(ui, "Battery")
-    private val cpu = InfoRow(ui, "CPU")
-    private val gpu = InfoRow(ui, "GPU")
-    private val skin = InfoRow(ui, "Device skin")
-    private var batteryTemp: Double? = null
-    private var thermal: ThermalSnapshot? = null
-    private var levelShown: ThermalLevel? = null
+    private val battery = InfoRow(ui, "Battery temperature")
+    private val health = InfoRow(ui, "Battery health")
+    private val status = InfoRow(ui, "Status")
 
     init {
-        levels.forEach { scale.addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
-        hero.addView(scale, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = ui.dp(22)
-        })
-        sectionLabel("Sensors")
-        addBlock(ui.rowsCard(listOf(status, headroom, battery, cpu, gpu, skin)))
-        listOf(cpu, gpu, skin).forEach { it.set(null, "Not exposed to apps") }
-        addBlock(
-            ui.noteCard(
-                "Why some sensors are missing",
-                "Android lets regular apps read the battery temperature and an overall thermal status, but not CPU, GPU " +
-                    "or skin temperatures (that API is reserved for device-owner apps). Rather than guess, those are shown " +
-                    "as unavailable. Status labels map directly from Android's thermal levels.",
-            ),
-            topMargin = 16,
-        )
+        sectionLabel("Battery")
+        addBlock(ui.rowsCard(listOf(battery, health, status)))
         enter()
     }
 
     override fun onActive(scope: CoroutineScope) {
-        scope.launch { env.graph.battery.observe(pollIntervalMs = 5_000).collect { batteryTemp = it.temperatureC; render() } }
-        scope.launch { env.graph.thermal.observe().collect { thermal = it; render() } }
+        scope.launch { env.graph.battery.observe(pollIntervalMs = 5_000).collect(::render) }
     }
 
-    private fun render() {
-        val t = thermal
-        val level = t?.level
-        val color = when (level) {
-            ThermalLevel.Hot -> palette.warning
-            ThermalLevel.Severe -> palette.danger
-            else -> palette.textPrimary
-        }
-        setHero(
-            "Battery temperature",
-            batteryTemp?.let(Formats::celsius),
-            level?.let { "Device thermal state: ${Copy.thermal(it)}" } ?: "Thermal status not reported",
-            color,
-        )
-        if (level != levelShown) {
-            levelShown = level
-            levels.forEachIndexed { i, view ->
-                val active = level?.ordinal == i
-                view.setTextColor(if (active) (if (i >= 2) color else palette.textPrimary) else palette.textTertiary)
-                view.typeface = com.netspeedtest.ui.theme.Fonts.sans(if (active) 600 else 400)
-                view.background = if (active) NeuDrawable(ui.palette, ui.dp(12f), NeuDrawable.Style.Raised, ui.density, 0.4f) else null
-            }
-        }
-        status.set(t?.statusName?.let { "$it · ${Copy.thermal(t.level!!)}" }, if (t?.status == null) "Not reported by this device" else "Reported by Android")
-        headroom.set(
-            t?.headroom?.let { String.format(Locale.getDefault(), "%.0f%%", it * 100) },
-            if (t?.headroom != null) "of the severe-throttling threshold, 10 s forecast" else "Not provided by this device",
-        )
-        battery.set(batteryTemp?.let(Formats::celsius))
+    private fun render(b: BatterySnapshot) {
+        val temp = b.temperatureC
+        setHero("Battery temperature", temp?.let(Formats::celsius), b.health?.let { "Battery health: $it" } ?: "")
+        battery.set(temp?.let(Formats::celsius))
+        health.set(b.health)
+        status.set(Copy.status(b.status))
     }
 }
 

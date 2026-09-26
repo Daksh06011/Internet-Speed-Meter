@@ -11,8 +11,6 @@ import com.netspeedtest.device.ChargeStatus
 import com.netspeedtest.device.ConnectionKind
 import com.netspeedtest.device.MemorySnapshot
 import com.netspeedtest.device.NetworkSnapshot
-import com.netspeedtest.device.ThermalLevel
-import com.netspeedtest.device.ThermalSnapshot
 import com.netspeedtest.device.TrafficRate
 import com.netspeedtest.speedtest.SpeedTestResult
 import com.netspeedtest.speedtest.TestPhase
@@ -182,7 +180,6 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
         }
         scope.launch { graph.network.observe().collect(::renderNetwork) }
         scope.launch { graph.battery.observe(pollIntervalMs = 2_000).collect(::renderBattery) }
-        scope.launch { graph.thermal.observe(headroomIntervalMs = 0).collect(::renderThermal) }
         scope.launch { graph.memory.observe(intervalMs = 5_000).collect(::renderMemory) }
         scope.launch { graph.traffic.observe().collect(::renderTraffic) }
         scope.launch { graph.history.history.collect { renderLast(it?.firstOrNull(), it == null) } }
@@ -330,7 +327,7 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
         powerTile.label.update(if (b.isPluggedIn) "Charging" else "Power draw")
         val current = b.currentMa
         if (current == null) {
-            powerTile.set("—", Copy.UNAVAILABLE_DEVICE)
+            powerTile.set(if (b.isPluggedIn) "Plugged in" else "On battery", if (b.isPluggedIn) Copy.source(b.source) else Copy.status(b.status))
         } else {
             val watts = b.powerW?.let { "≈ ${Formats.watts(it)}" }
             powerTile.set(watts ?: Formats.signedMa(current), if (watts != null) "${Formats.signedMa(current)} · estimate" else "Current")
@@ -341,23 +338,9 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
         renderTemperature()
     }
 
-    private var thermal: ThermalSnapshot? = null
-
-    private fun renderThermal(t: ThermalSnapshot) {
-        thermal = t
-        renderTemperature()
-    }
-
     private fun renderTemperature() {
         val temp = tempTile.value.tag as? Double
-        val level = thermal?.level
-        val sub = level?.let { "Thermal: ${Copy.thermal(it)}" } ?: "Battery sensor"
-        val color = when (level) {
-            ThermalLevel.Hot -> palette.warning
-            ThermalLevel.Severe -> palette.danger
-            else -> palette.textPrimary
-        }
-        tempTile.set(temp?.let(Formats::celsius) ?: "—", sub, color)
+        tempTile.set(temp?.let(Formats::celsius) ?: "—", "Battery sensor")
     }
 
     private fun renderMemory(m: MemorySnapshot?) {

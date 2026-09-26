@@ -7,7 +7,6 @@ import com.netspeedtest.data.SettingsRepository
 import com.netspeedtest.device.BatteryInfoProvider
 import com.netspeedtest.device.MemoryInfoProvider
 import com.netspeedtest.device.NetworkInfoProvider
-import com.netspeedtest.device.ThermalInfoProvider
 import com.netspeedtest.device.TrafficMonitor
 import com.netspeedtest.speedtest.HttpClient
 import com.netspeedtest.speedtest.SpeedTestEngine
@@ -32,7 +31,6 @@ class AppGraph(private val app: Application) {
     val history by lazy { HistoryRepository(File(app.filesDir, "history.json"), scope) }
     val network by lazy { NetworkInfoProvider(app) }
     val battery by lazy { BatteryInfoProvider(app) }
-    val thermal by lazy { ThermalInfoProvider(app) }
     val memory by lazy { MemoryInfoProvider(app) }
     val traffic by lazy { TrafficMonitor() }
     val navigator by lazy { Navigator() }

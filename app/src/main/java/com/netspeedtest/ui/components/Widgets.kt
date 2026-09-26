@@ -307,6 +307,16 @@ class InfoRow(private val ui: Ui, label: String, value: String = "—", sub: Str
         subView.visibility = if (sub.isNullOrEmpty()) GONE else VISIBLE
     }
 
+    /** Hides the row (and the divider above it) when the phone doesn't provide this value. */
+    fun showIf(visible: Boolean) {
+        val v = if (visible) VISIBLE else GONE
+        if (visibility == v) return
+        visibility = v
+        val parent = parent as? ViewGroup ?: return
+        val index = parent.indexOfChild(this)
+        if (index > 0) parent.getChildAt(index - 1).visibility = v
+    }
+
     companion object {
         const val UNAVAILABLE = "Unavailable"
     }

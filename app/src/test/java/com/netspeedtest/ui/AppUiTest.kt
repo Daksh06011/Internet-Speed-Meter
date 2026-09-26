@@ -3,7 +3,6 @@ package com.netspeedtest.ui
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.BatteryManager
-import android.os.PowerManager
 import android.provider.Settings
 import com.netspeedtest.MainActivity
 import com.netspeedtest.data.ThemeMode
@@ -45,7 +44,6 @@ class AppUiTest {
         val battery = shadowOf(context.getSystemService(BatteryManager::class.java)) as ShadowBatteryManager
         battery.setIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW, 1_820_000)
         battery.setIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER, 3_690_000)
-        shadowOf(context.getSystemService(PowerManager::class.java)).setCurrentThermalStatus(PowerManager.THERMAL_STATUS_NONE)
     }
 
     private fun launch(): ActivityController<MainActivity> {
@@ -72,7 +70,7 @@ class AppUiTest {
         assertTrue("power is V × I: 4.123 V × 1820 mA", hasText(root, "≈ 7.5 W"))
         assertTrue(hasText(root, "+1,820 mA · estimate"))
         assertTrue(hasText(root, "No tests yet"))
-        assertTrue(visible.toString(), hasText(root, "Thermal: Normal"))
+        assertTrue(visible.toString(), hasText(root, "Battery sensor"))
         screenshot(controller.get(), "01-home-dark")
         controller.pause().stop().destroy()
     }
@@ -131,23 +129,25 @@ class AppUiTest {
     }
 
     @Test
-    fun temperatureAndChargingNeverInventValues() {
+    fun missingBatteryCurrentIsHiddenNotFaked() {
         val battery = shadowOf(context.getSystemService(BatteryManager::class.java)) as ShadowBatteryManager
         battery.setIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW, Int.MIN_VALUE)
         val controller = launch()
         val activity = controller.get()
         val root = activity.window.decorView
-        assertTrue(hasText(root, "Unavailable on this device"))
+        // A phone without a current sensor shows plug state instead of an "unavailable" value.
+        assertTrue(texts(root).toString(), hasText(root, "Plugged in"))
+        assertFalse(texts(root).any { it.contains("Not exposed") || it.contains(" mA") })
 
         activity.graph.navigator.push(Route.Temperature)
         idle(2_500)
-        assertTrue(hasText(root, "Not exposed to apps"))
-        assertEquals(3, texts(root).count { it == "Not exposed to apps" }) // CPU, GPU, skin
-        assertTrue(hasText(root, "None · Normal"))
+        assertTrue(hasText(root, "34.2°C"))
+        assertFalse(texts(root).any { it.contains("CPU") || it.contains("GPU") || it.contains("hermal") })
 
         activity.graph.navigator.push(Route.Charging)
         idle(2_500)
-        assertTrue(texts(root).toString(), hasText(root, "This device doesn't report battery current."))
+        assertTrue(texts(root).toString(), hasText(root, "82%"))
+        assertFalse(texts(root).any { it.contains("mA") || it == "Unavailable" })
         screenshot(activity, "10-charging-unavailable")
         controller.pause().stop().destroy()
     }
