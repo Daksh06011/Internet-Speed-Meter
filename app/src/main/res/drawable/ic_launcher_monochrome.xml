@@ -4,12 +4,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Full 280° gauge arc and centre knob, matching the icon artwork. -->
     <path
-        android:pathData="M39.86,72.85 A22,22 0 0,1 66.17,37.68"
-        android:strokeWidth="6"
+        android:pathData="M38.57,72.39 A24,24 0 1,1 69.43,72.39"
+        android:strokeWidth="5"
         android:strokeColor="#FFFFFFFF"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M54,56 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0"
+        android:pathData="M54,54 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
         android:fillColor="#FFFFFFFF" />
 </vector>

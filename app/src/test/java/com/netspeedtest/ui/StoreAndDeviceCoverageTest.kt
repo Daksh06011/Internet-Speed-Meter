@@ -136,31 +136,24 @@ class StoreAndDeviceCoverageTest {
     @Config(sdk = [36])
     fun playStoreGraphics() {
         val p = Palette.Dark
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+        // Full-resolution cut-out of the icon artwork (the gauge without bezel or white background).
+        val art = javaClass.classLoader!!.getResourceAsStream("brand/gauge-art.png")!!.use { android.graphics.BitmapFactory.decodeStream(it) }
+        val face = 0xFF010411.toInt()
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
-        fun gauge(canvas: Canvas, cx: Float, cy: Float, r: Float, width: Float, fraction: Float) {
-            val oval = RectF(cx - r, cy - r, cx + r, cy + r)
-            stroke.strokeWidth = width
-            stroke.color = 0xFF2A2C31.toInt()
-            canvas.drawArc(oval, 140f, 260f, false, stroke)
-            stroke.color = p.accent
-            canvas.drawArc(oval, 140f, 260f * fraction, false, stroke)
-            fill.color = p.accent
-            canvas.drawCircle(cx, cy, width * 0.62f, fill)
-        }
-
+        // 512 × 512 Play icon: full-bleed navy face with the gauge centred (Play applies its own rounded mask).
         val icon = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         Canvas(icon).apply {
-            drawColor(p.background)
-            gauge(this, 256f, 270f, 150f, 44f, 0.62f)
+            drawColor(face)
+            val size = 512f * 1.0f
+            drawBitmap(art, null, RectF(256 - size / 2, 256 - size / 2, 256 + size / 2, 256 + size / 2), paint)
         }
         save(icon, "icon-512")
 
         val feature = Bitmap.createBitmap(1024, 500, Bitmap.Config.ARGB_8888)
         Canvas(feature).apply {
-            drawColor(p.background)
-            gauge(this, 780f, 262f, 150f, 30f, 0.72f)
+            drawColor(face)
+            drawBitmap(art, null, RectF(520f, 0f, 1020f, 500f), paint)
             val text = Paint(Paint.ANTI_ALIAS_FLAG)
             text.typeface = Fonts.sans(600); text.textSize = 68f; text.color = p.textPrimary; text.letterSpacing = -0.02f
             drawText("Net Speed Test", 72f, 220f, text)

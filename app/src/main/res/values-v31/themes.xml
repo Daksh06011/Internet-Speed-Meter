@@ -12,5 +12,7 @@
         <item name="android:windowSplashScreenBackground">@color/window_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_animated</item>
         <item name="android:windowSplashScreenAnimationDuration">1000</item>
+        <!-- The icon sits on the same deep-navy disc as the launcher icon. -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/icon_background</item>
     </style>
 </resources>

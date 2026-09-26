@@ -20,7 +20,7 @@ All screenshots in `docs/screenshots/` are produced by the automated UI tests, w
 - **Temperature.** Live battery temperature with battery health and charging status.
 - **History.** Stored locally only. You can delete single results or clear everything (with confirmation).
 - **Settings.** Theme (System / Light / Dark, default Dark), unit (Mbps / MB/s), keep the screen on during tests, and haptics.
-- **Launch animation.** On Android 12+ the gauge rotates in while its track draws, the cyan arc sweeps up and settles, the centre dot pops in and a soft ring pulses out, then the splash fades into the app (1 s, cold start only, skipped when animations are off). A test verifies the last frame matches the launcher icon exactly, so there is no jump.
+- **App icon & launch animation.** The launcher icon is the glowing-gauge artwork (cut out of its bezel and white background, on a deep-navy adaptive-icon background so every launcher shape crops it cleanly; themed-icon outline on Android 13+). On Android 12+ a vector rendition of the same gauge animates on launch: it rotates in, the ticks fade in, the teal → cyan → blue arc sweeps round, the silver knob pops and a soft ring pulses out (1 s, cold start only, skipped when animations are off).
 - **Motion and accessibility.** Spring press states, number interpolation, staggered entrances and a one-shot completion pulse. Haptics follow system settings. Everything respects "Remove animations". Views have TalkBack descriptions, touch targets are at least 48 dp, layouts survive font scaling, and states are never shown by colour alone.
 
 ## Architecture

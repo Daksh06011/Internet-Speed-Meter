@@ -66,6 +66,7 @@ sourceSets {
     }
     test {
         kotlin.srcDir(appDir.resolve("src/test/java"))
+        resources.srcDir(appDir.resolve("src/test/resources"))
     }
 }
 
