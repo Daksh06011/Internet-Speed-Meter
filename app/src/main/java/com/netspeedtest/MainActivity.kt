@@ -229,6 +229,6 @@ class MainActivity : Activity() {
 
     private companion object {
         /** Matches windowSplashScreenAnimationDuration in values-v31/themes.xml. */
-        const val LAUNCH_ANIMATION_MS = 800L
+        const val LAUNCH_ANIMATION_MS = 1_000L
     }
 }

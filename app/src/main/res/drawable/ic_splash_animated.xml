@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launch animation (Android 12+): the gauge sweeps up like a speed test, eases back to
-     rest, and the centre dot pops in. Pure vector, a few hundred bytes. -->
+<!-- Launch animation (Android 12+), 1 s total:
+       0–300 ms  gauge rotates in and grows while the track draws itself
+     120–620 ms  cyan arc sweeps up like a speed test peaking
+     620–900 ms  arc eases back to rest (matches the launcher icon)
+     450–750 ms  centre dot pops in with a small overshoot
+     600–1000 ms soft ring pulses out from the dot and fades ("ready")
+     Pure vector: a few hundred bytes, no bitmaps or Lottie. -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt">
     <aapt:attr name="android:drawable">
@@ -9,70 +14,128 @@
             android:height="108dp"
             android:viewportWidth="108"
             android:viewportHeight="108">
-            <path
-                android:pathData="M39.86,72.85 A22,22 0 1,1 68.14,72.85"
-                android:strokeWidth="6"
-                android:strokeColor="@color/icon_track"
-                android:strokeLineCap="round" />
-            <path
-                android:name="progress"
-                android:pathData="M39.86,72.85 A22,22 0 1,1 68.14,72.85"
-                android:strokeWidth="6"
-                android:strokeColor="@color/icon_accent"
-                android:strokeLineCap="round"
-                android:trimPathEnd="0" />
             <group
-                android:name="dot"
+                android:name="gauge"
                 android:pivotX="54"
                 android:pivotY="56"
-                android:scaleX="0"
-                android:scaleY="0">
+                android:rotation="-40"
+                android:scaleX="0.82"
+                android:scaleY="0.82">
                 <path
-                    android:pathData="M54,56 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0"
-                    android:fillColor="@color/icon_accent" />
+                    android:name="track"
+                    android:pathData="M39.86,72.85 A22,22 0 1,1 68.14,72.85"
+                    android:strokeWidth="6"
+                    android:strokeColor="@color/icon_track"
+                    android:strokeLineCap="round"
+                    android:trimPathEnd="0" />
+                <path
+                    android:name="progress"
+                    android:pathData="M39.86,72.85 A22,22 0 1,1 68.14,72.85"
+                    android:strokeWidth="6"
+                    android:strokeColor="@color/icon_accent"
+                    android:strokeLineCap="round"
+                    android:trimPathEnd="0" />
+                <group
+                    android:name="pulse"
+                    android:pivotX="54"
+                    android:pivotY="56"
+                    android:scaleX="1"
+                    android:scaleY="1">
+                    <path
+                        android:name="pulseRing"
+                        android:pathData="M54,56 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0"
+                        android:strokeWidth="1.2"
+                        android:strokeColor="@color/icon_accent"
+                        android:strokeAlpha="0" />
+                </group>
+                <group
+                    android:name="dot"
+                    android:pivotX="54"
+                    android:pivotY="56"
+                    android:scaleX="0"
+                    android:scaleY="0">
+                    <path
+                        android:pathData="M54,56 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0"
+                        android:fillColor="@color/icon_accent" />
+                </group>
             </group>
         </vector>
     </aapt:attr>
-    <target android:name="progress">
+
+    <target android:name="gauge">
         <aapt:attr name="android:animation">
-            <set android:ordering="sequentially">
-                <objectAnimator
-                    android:duration="480"
-                    android:interpolator="@android:interpolator/decelerate_cubic"
-                    android:propertyName="trimPathEnd"
-                    android:valueFrom="0"
-                    android:valueTo="0.94"
-                    android:valueType="floatType" />
-                <objectAnimator
-                    android:duration="320"
-                    android:interpolator="@android:interpolator/fast_out_slow_in"
-                    android:propertyName="trimPathEnd"
-                    android:valueFrom="0.94"
-                    android:valueTo="0.62"
-                    android:valueType="floatType" />
+            <set>
+                <objectAnimator android:propertyName="rotation" android:duration="300"
+                    android:valueFrom="-40" android:valueTo="0" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in" />
+                <objectAnimator android:propertyName="scaleX" android:duration="300"
+                    android:valueFrom="0.82" android:valueTo="1" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in" />
+                <objectAnimator android:propertyName="scaleY" android:duration="300"
+                    android:valueFrom="0.82" android:valueTo="1" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in" />
             </set>
         </aapt:attr>
     </target>
+
+    <target android:name="track">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="trimPathEnd" android:duration="300"
+                android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="progress">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator android:propertyName="trimPathEnd" android:duration="500"
+                    android:startOffset="120"
+                    android:valueFrom="0" android:valueTo="0.96" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/decelerate_cubic" />
+                <objectAnimator android:propertyName="trimPathEnd" android:duration="280"
+                    android:valueFrom="0.96" android:valueTo="0.62" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in" />
+            </set>
+        </aapt:attr>
+    </target>
+
     <target android:name="dot">
         <aapt:attr name="android:animation">
             <set>
-                <objectAnimator
-                    android:duration="300"
-                    android:interpolator="@android:interpolator/overshoot"
-                    android:propertyName="scaleX"
-                    android:startOffset="120"
-                    android:valueFrom="0"
-                    android:valueTo="1"
-                    android:valueType="floatType" />
-                <objectAnimator
-                    android:duration="300"
-                    android:interpolator="@android:interpolator/overshoot"
-                    android:propertyName="scaleY"
-                    android:startOffset="120"
-                    android:valueFrom="0"
-                    android:valueTo="1"
-                    android:valueType="floatType" />
+                <objectAnimator android:propertyName="scaleX" android:duration="300"
+                    android:startOffset="450"
+                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/overshoot" />
+                <objectAnimator android:propertyName="scaleY" android:duration="300"
+                    android:startOffset="450"
+                    android:valueFrom="0" android:valueTo="1" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/overshoot" />
             </set>
+        </aapt:attr>
+    </target>
+
+    <target android:name="pulse">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator android:propertyName="scaleX" android:duration="400"
+                    android:startOffset="600"
+                    android:valueFrom="1" android:valueTo="3.4" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/decelerate_cubic" />
+                <objectAnimator android:propertyName="scaleY" android:duration="400"
+                    android:startOffset="600"
+                    android:valueFrom="1" android:valueTo="3.4" android:valueType="floatType"
+                    android:interpolator="@android:interpolator/decelerate_cubic" />
+            </set>
+        </aapt:attr>
+    </target>
+
+    <target android:name="pulseRing">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="strokeAlpha" android:duration="400"
+                android:startOffset="600"
+                android:valueFrom="0.9" android:valueTo="0" android:valueType="floatType"
+                android:interpolator="@android:interpolator/decelerate_quad" />
         </aapt:attr>
     </target>
 </animated-vector>
