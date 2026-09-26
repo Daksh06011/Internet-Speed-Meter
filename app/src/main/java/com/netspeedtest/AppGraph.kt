@@ -45,6 +45,7 @@ class AppGraph(private val app: Application) {
             network = network,
             history = history,
             scope = scope,
+            singleConnection = { settings.settings.value.singleConnection },
         )
     }
 }

@@ -36,6 +36,7 @@ data class TestUiState(
     val downloadMbps: Double? = null,
     val uploadMbps: Double? = null,
     val serverLocation: String? = null,
+    val connectionInfo: com.netspeedtest.speedtest.ConnectionInfo? = null,
     val error: TestError? = null,
     val result: SpeedTestResult? = null,
 ) {
@@ -69,6 +70,7 @@ class SpeedTestController(
     private val scope: CoroutineScope,
     private val server: SpeedTestServer = SpeedTestServers.Default,
     private val wallClock: () -> Long = System::currentTimeMillis,
+    private val singleConnection: () -> Boolean = { false },
 ) {
     private val state = MutableStateFlow(TestUiState())
     val uiState: StateFlow<TestUiState> = state.asStateFlow()
@@ -83,7 +85,8 @@ class SpeedTestController(
             state.value = TestUiState(phase = TestPhase.Failed, error = error)
             return
         }
-        val config = if (connection.metered) EngineConfig.Metered else EngineConfig.Unmetered
+        val base = if (connection.metered) EngineConfig.Metered else EngineConfig.Unmetered
+        val config = if (singleConnection()) base.singleStream() else base
         state.value = TestUiState(phase = TestPhase.Preparing)
 
         job = scope.launch {
@@ -113,6 +116,8 @@ class SpeedTestController(
                     networkDetail = connection.detail,
                     serverName = location,
                     bytesUsed = outcome.bytesUsed,
+                    isp = outcome.connectionInfo?.isp,
+                    clientIp = outcome.connectionInfo?.clientIp,
                 )
                 history.add(result)
                 state.update {
@@ -140,6 +145,7 @@ class SpeedTestController(
                     downloadMbps = update.downloadMbps,
                     uploadMbps = update.uploadMbps,
                     serverLocation = update.serverLocation,
+                    connectionInfo = update.connectionInfo,
                 )
             }
         }

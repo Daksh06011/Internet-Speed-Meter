@@ -40,6 +40,19 @@ class SettingsScreen(env: ScreenEnv) : Screen(env) {
             },
         )
 
+        sectionLabel("Connections")
+        addBlock(
+            SegmentedControl(ui, listOf("Multi", "Single"), if (s.singleConnection) 1 else 0) { i ->
+                repo.update { it.copy(singleConnection = i == 1) }
+            },
+        )
+        addBlock(
+            ui.text(TextStyle.Caption, "Multi uses parallel connections to find your full capacity. Single shows what one download or upload gets.", ui.palette.textSecondary).apply {
+                setPadding(ui.dp(4), ui.dp(10), ui.dp(4), 0)
+                setLineSpacing(0f, 1.2f)
+            },
+        )
+
         sectionLabel("Behaviour")
         val toggles = NeuCard(ui, radiusDp = 26f).apply { setPadding(ui.dp(20), ui.dp(4), ui.dp(12), ui.dp(4)) }
         toggles.addView(toggleRow("Keep screen on during tests", "Prevents the display sleeping mid-test", s.keepScreenOn) { on ->

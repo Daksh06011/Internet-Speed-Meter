@@ -9,8 +9,9 @@ package com.netspeedtest.speedtest
  *  - [pingUrl]: GET returns a tiny body quickly (used for latency and jitter).
  *  - [downloadUrl]: GET returns exactly `bytes` bytes of payload.
  *  - [uploadUrl]: accepts a POST body of arbitrary size and replies quickly.
- *  - [metadataUrl] (optional): GET returns `key=value` lines; [locationKey] names the
- *    key holding a human-readable server location.
+ *  - [metadataUrl] (optional): GET returns either flat JSON or `key=value` lines
+ *    describing the test: server location ([locationKey]), the client's public IP
+ *    ([ipKey]), internet provider ([ispKey]) and city ([cityKey]).
  */
 data class SpeedTestServer(
     val id: String,
@@ -20,6 +21,9 @@ data class SpeedTestServer(
     val uploadUrl: String,
     val metadataUrl: String? = null,
     val locationKey: String? = null,
+    val ipKey: String? = null,
+    val ispKey: String? = null,
+    val cityKey: String? = null,
 ) {
     fun downloadUrl(bytes: Long): String = downloadUrlTemplate.replace(BYTES_TOKEN, bytes.toString())
 
@@ -39,8 +43,11 @@ object SpeedTestServers {
         pingUrl = "https://speed.cloudflare.com/__down?bytes=0",
         downloadUrlTemplate = "https://speed.cloudflare.com/__down?bytes=${SpeedTestServer.BYTES_TOKEN}",
         uploadUrl = "https://speed.cloudflare.com/__up",
-        metadataUrl = "https://speed.cloudflare.com/cdn-cgi/trace",
+        metadataUrl = "https://speed.cloudflare.com/meta",
         locationKey = "colo",
+        ipKey = "clientIp",
+        ispKey = "asOrganization",
+        cityKey = "city",
     )
 
     val Default: SpeedTestServer = Cloudflare

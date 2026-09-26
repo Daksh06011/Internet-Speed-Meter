@@ -86,7 +86,9 @@ class HistoryRepository(
                         .put("c", r.connectionType)
                         .put("n", r.networkDetail)
                         .put("s", r.serverName)
-                        .put("b", r.bytesUsed),
+                        .put("b", r.bytesUsed)
+                        .putOpt("i", r.isp)
+                        .putOpt("ip", r.clientIp),
                 )
             }
             return array.toString()
@@ -108,6 +110,8 @@ class HistoryRepository(
                     networkDetail = o.optString("n", ""),
                     serverName = o.optString("s", ""),
                     bytesUsed = o.optLong("b", 0L),
+                    isp = if (o.has("i")) o.getString("i") else null,
+                    clientIp = if (o.has("ip")) o.getString("ip") else null,
                 )
             }
         }

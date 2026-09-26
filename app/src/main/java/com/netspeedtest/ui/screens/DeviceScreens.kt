@@ -322,7 +322,15 @@ class NetworkScreen(env: ScreenEnv) : DetailScreen(env, "Network") {
         )
         val cellular = n.kind == ConnectionKind.Cellular
         val wifi = n.kind == ConnectionKind.WiFi
-        generation.visibility = if (cellular) View.VISIBLE else View.GONE
+        // Rows that don't apply to this connection (or aren't reported) are hidden, not shown as "Unavailable".
+        generation.showIf(cellular && n.generation != null)
+        band.showIf(wifi && n.wifiFrequencyMhz != null)
+        signal.showIf(n.signalDbm != null)
+        link.showIf(wifi && n.wifiLinkMbps != null)
+        standard.showIf(wifi && n.wifiStandard != null)
+        metered.showIf(n.isConnected)
+        vpn.showIf(n.isConnected)
+        estimate.showIf(n.estimatedDownKbps != null)
         generation.set(n.generation, if (n.generation == null) "Not reported" else null)
         band.set(if (wifi) n.wifiFrequencyMhz?.let { "${NetworkSnapshot.bandOf(it)} · $it MHz" } else if (cellular) "Cellular" else null)
         signal.set(n.signalDbm?.let { "$it dBm" }, n.signalDbm?.let(::signalQuality))

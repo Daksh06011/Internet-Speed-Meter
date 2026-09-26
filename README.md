@@ -2,7 +2,7 @@
 
 A small, fast, privacy-first Android speed test and device-health utility with a soft neumorphic interface. It uses no gradients, glass or fake numbers.
 
-**APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (256 KB, minSdk 28 / Android 9, targetSdk 35, signed with a debug key for sideloading)
+**APK:** [`dist/NetSpeedTest-1.0.0.apk`](dist/NetSpeedTest-1.0.0.apk) (260 KB, minSdk 28 / Android 9, targetSdk 35, signed with a debug key for sideloading)
 
 | Home (dark) | Result | Light theme |
 |---|---|---|
@@ -11,7 +11,9 @@ A small, fast, privacy-first Android speed test and device-health utility with a
 All screenshots in `docs/screenshots/` are produced by the automated UI tests, which render the real views. They are not mock-ups.
 
 ## Features
-- **Real speed test.** Download, upload, ping, jitter and latency under load (bufferbloat), measured against Cloudflare's nearest edge. A live gauge and phase progress update during the test. You can cancel at any time, and a second tap cannot start a duplicate test.
+- **Real speed test.** Download, upload, ping, jitter and latency under load (bufferbloat), measured against Cloudflare's nearest edge. A live gauge, phase progress and a live speed graph update during the test. You can cancel at any time, and a second tap cannot start a duplicate test.
+- **Connection details like Speedtest.** Your internet provider (ISP), public IP address and the serving data centre come from Cloudflare's `/meta` endpoint. A **Multi / Single** connections switch (on Home and in Settings) chooses between parallel streams and one stream.
+- **Share results** as text from the result screen.
 - **Result summary.** Results are rated for browsing, streaming, gaming and video calls against documented thresholds (`QualityThresholds`). The summary also shows data used, the server and the network.
 - **Device health.** Tiles for battery, charging/power draw, temperature, network, memory and live traffic. Each tile opens a detail screen.
 - **Charging monitor.** Live current (mA), estimated watts, a session chart, and session average and peak values.
@@ -41,7 +43,7 @@ app/src/main/java/com/netspeedtest/
 - Unidirectional flow: engine → controller `StateFlow` → screen `render(state)`.
 
 ### Why Views instead of Jetpack Compose
-The build environment could not reach Google's Maven repository, which hosts Compose, AndroidX and the Android Gradle Plugin. To deliver a real, compiled, tested APK, the UI uses the Android framework directly with custom-drawn components. This also serves the performance goals: no Compose runtime, a 256 KB APK, fast cold start, no recomposition overhead, and redraws only when something changes.
+The build environment could not reach Google's Maven repository, which hosts Compose, AndroidX and the Android Gradle Plugin. To deliver a real, compiled, tested APK, the UI uses the Android framework directly with custom-drawn components. This also serves the performance goals: no Compose runtime, a 260 KB APK, fast cold start, no recomposition overhead, and redraws only when something changes.
 
 ## Permissions
 | Permission | Why |
@@ -74,6 +76,10 @@ Limits: Wi‑Fi/Ethernet allow 12 s / 600 MB down and 10 s / 250 MB up. Metered 
 - **Power (estimate)** = voltage (`EXTRA_VOLTAGE`, normalised from mV) × current. It is always labelled as an estimate.
 - **Capacity (estimate)** = `CHARGE_COUNTER` ÷ level. Cycle count uses `EXTRA_CYCLE_COUNT` on Android 14+.
 
+## Not included (and why)
+- **Choosing a different test server.** Cloudflare's network routes you to the nearest data centre automatically; other servers can be added in `SpeedTestServer`.
+- **Packet loss.** This needs a UDP test server; an HTTPS-based test can't measure it honestly.
+
 ## Device details
 - **Wi‑Fi link speed, band and standard** need Android 12+ (read without location permission; the Wi‑Fi name is never read).
 - **5G non-standalone** connections are reported by Android as 4G.
@@ -90,7 +96,7 @@ gradle -p offline-build assembleApk test  # APK is copied to dist/, screenshots 
 ```
 
 ## Testing performed
-33 automated tests, all passing:
+36 automated tests, all passing:
 - **Engine end-to-end over real loopback sockets** against a bandwidth-throttled HTTP server. At a 48 Mbps throttle it measured 47.8 Mbps. Cancellation closes every stream in about 0.3 s, with no bytes flowing afterwards. Server errors, refused connections and stalled transfers each map to the right error.
 - **Controller.** A full test runs through the UI state machine and is saved to history. A double tap is ignored. Cancel works, and late updates cannot revive a cancelled test.
 - **UI (Robolectric, real rendering).** The home screen shows real battery readings. Starting offline and in airplane mode shows the right messages. Every screen can be reached, and back navigation works. Values a phone doesn't report are hidden, never fabricated. The result → history → delete/clear flow works. The app is checked in light theme, at 1.6× font scale, and through a theme change that recreates the Activity while keeping navigation.

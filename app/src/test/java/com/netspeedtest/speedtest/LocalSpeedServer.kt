@@ -33,8 +33,11 @@ class LocalSpeedServer(
                 pingUrl = "$base/ping",
                 downloadUrlTemplate = "$base/down?bytes=${SpeedTestServer.BYTES_TOKEN}",
                 uploadUrl = "$base/up",
-                metadataUrl = "$base/trace",
+                metadataUrl = "$base/meta",
                 locationKey = "colo",
+                ipKey = "clientIp",
+                ispKey = "asOrganization",
+                cityKey = "city",
             )
         }
 
@@ -55,8 +58,8 @@ class LocalSpeedServer(
                     ex.responseHeaders.add("Server-Timing", "cfRequestDuration;dur=0.2")
                     ex.sendResponseHeaders(200, -1)
                 }
-                "/trace" -> {
-                    val body = "fl=1\ncolo=TST\nhttp=http/1.1\n".toByteArray()
+                "/meta" -> {
+                    val body = """{"clientIp":"203.0.113.7","asn":64500,"asOrganization":"Test ISP \"Fibre\"","colo":"TST","city":"Testville","country":"XX"}""".toByteArray()
                     ex.sendResponseHeaders(200, body.size.toLong())
                     ex.responseBody.write(body)
                 }

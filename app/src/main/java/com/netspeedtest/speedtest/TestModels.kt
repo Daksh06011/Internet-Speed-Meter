@@ -32,7 +32,28 @@ data class EngineUpdate(
     val downloadMbps: Double? = null,
     val uploadMbps: Double? = null,
     val serverLocation: String? = null,
+    val connectionInfo: ConnectionInfo? = null,
 )
+
+/** Who the server sees: public IP, internet provider and approximate city. */
+data class ConnectionInfo(val serverLocation: String?, val clientIp: String?, val isp: String?, val city: String?) {
+    companion object {
+        /**
+         * Reads flat JSON (`"key":"value"`) or `key=value` lines. Only string values are
+         * needed, so a tiny parser keeps the engine free of JSON dependencies.
+         */
+        fun parse(body: String, server: SpeedTestServer): ConnectionInfo {
+            fun value(key: String?): String? {
+                if (key == null) return null
+                val json = Regex("\"" + Regex.escape(key) + "\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(body)
+                val raw = json?.groupValues?.get(1)
+                    ?: body.lineSequence().map { it.split('=', limit = 2) }.firstOrNull { it.size == 2 && it[0].trim() == key }?.get(1)
+                return raw?.replace("\\/", "/")?.replace("\\\"", "\"")?.trim()?.takeIf { it.isNotEmpty() }?.take(64)
+            }
+            return ConnectionInfo(value(server.locationKey), value(server.ipKey), value(server.ispKey), value(server.cityKey))
+        }
+    }
+}
 
 /** Final, immutable outcome of a completed test. */
 data class SpeedTestResult(
@@ -49,4 +70,6 @@ data class SpeedTestResult(
     val networkDetail: String,
     val serverName: String,
     val bytesUsed: Long,
+    val isp: String? = null,
+    val clientIp: String? = null,
 )

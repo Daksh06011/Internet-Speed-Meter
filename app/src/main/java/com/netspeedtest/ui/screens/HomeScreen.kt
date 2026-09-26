@@ -61,6 +61,11 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
     private val upload = MetricCell(ui, Glyph.Upload, "Upload", palette.upload)
     private val ping = MetricCell(ui, Glyph.Ping, "Ping", palette.textPrimary)
     private val jitter = MetricCell(ui, Glyph.Jitter, "Jitter", palette.textPrimary)
+    private val liveGraph = com.netspeedtest.ui.components.Sparkline(ui, capacity = 120, color = palette.accentOnSurface)
+    private var graphPhase: TestPhase? = null
+    private val providerValue = ui.text(TextStyle.Caption, "—", palette.textPrimary)
+    private val serverValue = ui.text(TextStyle.Caption, "Cloudflare", palette.textPrimary)
+    private val connectionsValue = ui.text(TextStyle.Caption, "Multi", palette.textPrimary)
 
     // Device health
     private val batteryTile = HealthTile(ui, Glyph.Battery, "Battery")
@@ -122,6 +127,12 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
         card.addView(gauge, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = ui.dp(16)
         })
+        liveGraph.includeZero = true
+        liveGraph.visibility = View.GONE
+        card.addView(liveGraph, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(44)).apply {
+            topMargin = ui.dp(4)
+            bottomMargin = ui.dp(8)
+        })
         statusTitle.gravity = Gravity.CENTER
         statusBody.gravity = Gravity.CENTER
         statusBody.setLineSpacing(0f, 1.2f)
@@ -140,7 +151,34 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
         card.addView(metricRow(download, upload))
         card.addView(ui.divider())
         card.addView(metricRow(ping, jitter))
+        card.addView(ui.divider())
+        card.addView(infoFooter())
         addBlock(card, topMargin = 24)
+    }
+
+    /** Provider, server and connection mode — tap "Connections" to switch Multi / Single. */
+    private fun infoFooter() = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        setPadding(0, ui.dp(14), 0, ui.dp(12))
+        fun cell(label: String, value: android.widget.TextView, weight: Float) = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(ui.text(TextStyle.Label, label, palette.textTertiary))
+            value.maxLines = 1
+            value.ellipsize = android.text.TextUtils.TruncateAt.END
+            addView(value, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = ui.dp(6) })
+            isFocusable = true
+        }.also { addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)) }
+        cell("Provider", providerValue, 1.3f)
+        cell("Server", serverValue, 1.1f)
+        cell("Connections", connectionsValue, 0.9f).apply {
+            isClickable = true
+            minimumHeight = ui.dp(48)
+            setOnClickListener {
+                if (graph.speedTest.uiState.value.isRunning) return@setOnClickListener
+                Haptics.tap(this)
+                graph.settings.update { it.copy(singleConnection = !it.singleConnection) }
+            }
+        }
     }
 
     private fun metricRow(a: View, b: View) = LinearLayout(context).apply {
@@ -259,12 +297,36 @@ class HomeScreen(env: ScreenEnv) : Screen(env) {
             }
         }
 
+        renderGraph(state)
+        val info = state.connectionInfo
+        val last = graph.history.history.value?.firstOrNull()
+        providerValue.update(info?.isp ?: last?.isp ?: "—")
+        serverValue.update(info?.serverLocation?.let { loc -> info.city?.let { "$it · $loc" } ?: loc } ?: "Cloudflare")
+        connectionsValue.update(if (settings.singleConnection) "Single" else "Multi")
+        connectionsValue.contentDescription = "Connections: ${connectionsValue.text}. Double tap to switch"
+
         download.set(state.downloadMbps?.let { Formats.speedValue(it, unit) }, unit.label, state.phase == TestPhase.Download)
         upload.set(state.uploadMbps?.let { Formats.speedValue(it, unit) }, unit.label, state.phase == TestPhase.Upload)
         ping.set(state.pingMs?.let(Formats::ms), "ms", state.phase == TestPhase.Ping)
         jitter.set(state.jitterMs?.let(Formats::ms), "ms", state.phase == TestPhase.Ping)
 
         if (justCompleted) onCompleted(state)
+    }
+
+    /** Live throughput trace for the current transfer phase (like Speedtest's live graph). */
+    private fun renderGraph(state: TestUiState) {
+        val transferring = state.phase == TestPhase.Download || state.phase == TestPhase.Upload
+        if (transferring && state.phase != graphPhase) {
+            graphPhase = state.phase
+            liveGraph.clear()
+            liveGraph.setColor(if (state.phase == TestPhase.Download) palette.accentOnSurface else palette.upload)
+        }
+        if (transferring) state.liveValue?.let { liveGraph.add(it.toFloat()) }
+        if (state.phase == TestPhase.Idle || state.phase == TestPhase.Failed || state.phase == TestPhase.Cancelled || state.phase == TestPhase.Preparing) {
+            graphPhase = null
+            liveGraph.clear()
+        }
+        liveGraph.visibility = if (graphPhase != null) View.VISIBLE else View.GONE
     }
 
     private fun onCompleted(state: TestUiState) {

@@ -30,9 +30,13 @@ import kotlinx.coroutines.launch
 class ResultScreen(env: ScreenEnv, private val timestamp: Long, private val fresh: Boolean) : Screen(env) {
     private val palette = ui.palette
     private var shown = false
+    private var result: SpeedTestResult? = null
+    private val shareButton = com.netspeedtest.ui.components.IconButton(ui, com.netspeedtest.ui.components.Glyph.Share, "Share result").apply {
+        onClick { result?.let(::share) }
+    }
 
     init {
-        header(if (fresh) "Your result" else "Result")
+        header(if (fresh) "Your result" else "Result", shareButton)
     }
 
     override fun onActive(scope: CoroutineScope) {
@@ -51,7 +55,23 @@ class ResultScreen(env: ScreenEnv, private val timestamp: Long, private val fres
         addBlock(ui.text(TextStyle.Body, "This result is no longer available. It may have been deleted.", palette.textSecondary))
     }
 
+    private fun share(r: SpeedTestResult) {
+        val unit = env.graph.settings.settings.value.unit
+        val text = buildString {
+            appendLine("Net Speed Test · ${Formats.dateTime(r.timestampMillis)}")
+            appendLine("↓ Download ${Formats.speed(r.downloadMbps, unit)}")
+            appendLine("↑ Upload ${Formats.speed(r.uploadMbps, unit)}")
+            appendLine("Ping ${Formats.ms(r.pingMs)} ms · Jitter ${Formats.ms(r.jitterMs)} ms")
+            append(listOfNotNull(r.isp, r.networkDetail, r.serverName).joinToString(" · "))
+        }
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, text)
+        context.startActivity(android.content.Intent.createChooser(send, "Share result"))
+    }
+
     private fun show(r: SpeedTestResult, unit: SpeedUnit) {
+        result = r
         val blocks = ArrayList<View>()
 
         val hero = NeuCard(ui, radiusDp = 32f).apply { setPadding(ui.dp(24), ui.dp(24), ui.dp(24), ui.dp(8)) }
@@ -95,6 +115,8 @@ class ResultScreen(env: ScreenEnv, private val timestamp: Long, private val fres
                     InfoRow(ui, "Connection", r.connectionType),
                     InfoRow(ui, "Network", r.networkDetail),
                     InfoRow(ui, "Server", r.serverName),
+                    InfoRow(ui, "Provider", r.isp ?: "—").also { it.showIf(r.isp != null) },
+                    InfoRow(ui, "IP address", r.clientIp ?: "—").also { it.showIf(r.clientIp != null) },
                     InfoRow(ui, "Tested", Formats.dateTime(r.timestampMillis)),
                     InfoRow(ui, "Data used", Formats.bytes(r.bytesUsed)),
                 ),

@@ -35,8 +35,22 @@ class SpeedTestEngineTest {
             assertTrue("ping should be a positive loopback RTT", outcome.pingMs > 0 && outcome.pingMs < 50)
             assertTrue(outcome.jitterMs >= 0)
             assertEquals("TST", outcome.serverLocation)
+            assertEquals("Test ISP \"Fibre\"", outcome.connectionInfo?.isp)
+            assertEquals("203.0.113.7", outcome.connectionInfo?.clientIp)
+            assertEquals("Testville", outcome.connectionInfo?.city)
             assertNotNull(outcome.loadedLatencyDownMs)
             assertTrue(outcome.bytesUsed > 10_000_000)
+        }
+    }
+
+    @Test
+    fun singleConnectionModeUsesOneStream() = runBlocking {
+        LocalSpeedServer(downBytesPerSec = 1_500_000, upBytesPerSec = 1_000_000).use { server ->
+            val config = EngineConfig(pingSamples = 3, download = plan(4, 3_000), upload = plan(3, 3_000)).singleStream()
+            val outcome = withTimeout(30_000) { SpeedTestEngine().run(server.config, config) {} }
+            // One throttled stream: 1.5 MB/s = 12 Mbps down, 1 MB/s = 8 Mbps up.
+            assertEquals(12.0, outcome.downloadMbps, 12.0 * 0.25)
+            assertEquals(8.0, outcome.uploadMbps, 8.0 * 0.35)
         }
     }
 

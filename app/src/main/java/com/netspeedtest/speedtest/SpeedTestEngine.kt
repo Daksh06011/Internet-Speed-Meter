@@ -14,6 +14,9 @@ data class EngineConfig(
     val download: TransferPlan,
     val upload: TransferPlan,
 ) {
+    /** Single-connection mode (like Speedtest's "Single"): one stream each way. */
+    fun singleStream(): EngineConfig = copy(download = download.copy(streams = 1), upload = upload.copy(streams = 1))
+
     companion object {
         /** Unmetered links (Wi-Fi, Ethernet): allow more data for accuracy at high speeds. */
         val Unmetered = EngineConfig(
@@ -52,6 +55,7 @@ class SpeedTestEngine(
         val loadedLatencyDownMs: Double?,
         val loadedLatencyUpMs: Double?,
         val serverLocation: String?,
+        val connectionInfo: ConnectionInfo?,
         val bytesUsed: Long,
     )
 
@@ -67,8 +71,9 @@ class SpeedTestEngine(
         }
         publish(state)
 
-        val location = fetchLocation(server)
-        state = state.copy(serverLocation = location)
+        val info = fetchConnectionInfo(server)
+        val location = info?.serverLocation
+        state = state.copy(serverLocation = location, connectionInfo = info)
 
         // Idle latency.
         publish(state.copy(phase = TestPhase.Ping, phaseProgress = 0f))
@@ -111,26 +116,25 @@ class SpeedTestEngine(
             loadedLatencyDownMs = loadedDown,
             loadedLatencyUpMs = loadedUp,
             serverLocation = location,
+            connectionInfo = info,
             bytesUsed = download.bytes + upload.bytes,
         )
     }
 
-    /** Reads optional `key=value` metadata (e.g. the serving data centre). Never fatal. */
-    private suspend fun fetchLocation(server: SpeedTestServer): String? {
+    /** Reads the optional metadata endpoint (server location, IP, ISP). Never fatal by itself. */
+    private suspend fun fetchConnectionInfo(server: SpeedTestServer): ConnectionInfo? {
         val url = server.metadataUrl ?: return null
-        val key = server.locationKey ?: return null
         return try {
             http.open(url).runCancellable { c ->
                 c.requireSuccess()
-                c.inputStream.bufferedReader().useLines { lines ->
-                    lines.take(64).map { it.split('=', limit = 2) }
-                        .firstOrNull { it.size == 2 && it[0] == key }?.get(1)?.trim()?.take(16)
-                }
+                val body = c.inputStream.bufferedReader().use { it.readText().take(MAX_METADATA_CHARS) }
+                ConnectionInfo.parse(body, server)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: SpeedTestException) {
-            throw e
+            // A server without the metadata endpoint can still run the test.
+            if (e.error == TestError.ServerUnavailable) null else throw e
         } catch (e: java.io.IOException) {
             // Metadata is optional, but an unreachable server is worth failing fast on.
             throw SpeedTestException(e.toTestError(), e)
@@ -162,5 +166,6 @@ class SpeedTestEngine(
     private companion object {
         const val LOADED_PROBE_START_MS = 1_000L
         const val LOADED_PROBE_INTERVAL_MS = 500L
+        const val MAX_METADATA_CHARS = 8_192
     }
 }

@@ -8,7 +8,7 @@ import android.view.View
 import com.netspeedtest.ui.theme.Ui
 
 /** Line icons drawn from code on a 24×24 grid — zero bitmap or icon-font weight. */
-enum class Glyph { Download, Upload, Ping, Jitter, Battery, Thermometer, Bolt, Wifi, Cellular, Ethernet, Globe, Memory, History, Settings, Back, ChevronRight, Close, Trash, Check, Alert, Pulse }
+enum class Glyph { Download, Upload, Ping, Jitter, Battery, Thermometer, Bolt, Wifi, Cellular, Ethernet, Globe, Memory, History, Settings, Back, ChevronRight, Close, Trash, Check, Alert, Pulse, Share }
 
 class IconView(ui: Ui, glyph: Glyph, tint: Int) : View(ui.context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -70,6 +70,7 @@ class IconView(ui: Ui, glyph: Glyph, tint: Int) : View(ui.context) {
                 Glyph.Close -> { p.moveTo(6.5f, 6.5f); p.lineTo(17.5f, 17.5f); p.moveTo(17.5f, 6.5f); p.lineTo(6.5f, 17.5f) }
                 Glyph.Trash -> { p.moveTo(4.5f, 7f); p.lineTo(19.5f, 7f); p.moveTo(9.5f, 7f); p.lineTo(9.5f, 4.5f); p.lineTo(14.5f, 4.5f); p.lineTo(14.5f, 7f); p.moveTo(6.5f, 7f); p.lineTo(7.5f, 20f); p.lineTo(16.5f, 20f); p.lineTo(17.5f, 7f) }
                 Glyph.Check -> { p.moveTo(5f, 12.5f); p.lineTo(10f, 17.5f); p.lineTo(19f, 7f) }
+                Glyph.Share -> { p.addCircle(17.5f, 5.5f, 2.5f, Path.Direction.CW); p.addCircle(6.5f, 12f, 2.5f, Path.Direction.CW); p.addCircle(17.5f, 18.5f, 2.5f, Path.Direction.CW); p.moveTo(8.7f, 10.7f); p.lineTo(15.3f, 6.8f); p.moveTo(8.7f, 13.3f); p.lineTo(15.3f, 17.2f) }
                 Glyph.Alert -> { p.addCircle(12f, 12f, 9f, Path.Direction.CW); p.moveTo(12f, 7.5f); p.lineTo(12f, 13f); p.moveTo(12f, 16.4f); p.lineTo(12f, 16.6f) }
             }
         }

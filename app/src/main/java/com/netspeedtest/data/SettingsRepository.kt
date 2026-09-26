@@ -14,6 +14,8 @@ data class AppSettings(
     val unit: SpeedUnit = SpeedUnit.Mbps,
     val keepScreenOn: Boolean = false,
     val haptics: Boolean = true,
+    /** Measure with one connection instead of several parallel ones. */
+    val singleConnection: Boolean = false,
 )
 
 /** A handful of preferences in [android.content.SharedPreferences]; read once, cached in memory. */
@@ -27,6 +29,7 @@ class SettingsRepository(context: Context) {
         unit = enumOrDefault(prefs.getString(KEY_UNIT, null), SpeedUnit.Mbps),
         keepScreenOn = prefs.getBoolean(KEY_SCREEN_ON, false),
         haptics = prefs.getBoolean(KEY_HAPTICS, true),
+        singleConnection = prefs.getBoolean(KEY_SINGLE, false),
     )
 
     fun update(transform: (AppSettings) -> AppSettings) {
@@ -38,6 +41,7 @@ class SettingsRepository(context: Context) {
             .putString(KEY_UNIT, next.unit.name)
             .putBoolean(KEY_SCREEN_ON, next.keepScreenOn)
             .putBoolean(KEY_HAPTICS, next.haptics)
+            .putBoolean(KEY_SINGLE, next.singleConnection)
             .apply()
     }
 
@@ -49,5 +53,6 @@ class SettingsRepository(context: Context) {
         const val KEY_UNIT = "unit"
         const val KEY_SCREEN_ON = "keep_screen_on"
         const val KEY_HAPTICS = "haptics"
+        const val KEY_SINGLE = "single_connection"
     }
 }
