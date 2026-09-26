@@ -1,0 +1,14 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+.kotlin/
+captures/
+offline-build/build/
+offline-build/.gradle/
+offline-build/sdk/
+offline-build/debug.keystore
+offline-build/test-shim/build/
+offline-build/test-shim/.gradle/
